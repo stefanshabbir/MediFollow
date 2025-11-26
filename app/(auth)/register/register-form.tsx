@@ -35,9 +35,7 @@ export function RegisterForm() {
   const passwordIsValid = form.password.trim().length >= 6;
   const passwordsMatch = form.password === form.confirmPassword;
   const nameIsValid = form.fullName.trim().length >= 2;
-  const validRoles: FormFields["role"][] = ["patient", "doctor", "admin"];
-  const roleIsValid = validRoles.includes(form.role);
-  const formIsValid = emailIsValid && passwordIsValid && passwordsMatch && nameIsValid && roleIsValid;
+  const formIsValid = emailIsValid && passwordIsValid && passwordsMatch && nameIsValid;
 
   const handleInputChange = (
     event: React.ChangeEvent<HTMLInputElement>
@@ -69,7 +67,7 @@ export function RegisterForm() {
         formData.append('email', form.email);
         formData.append('password', form.password);
         formData.append('fullName', form.fullName);
-        formData.append('role', form.role);
+        // role is handled on server
 
         const result = await signup(formData);
 
@@ -79,7 +77,6 @@ export function RegisterForm() {
         }
 
         setSuccess("Account created successfully! Please check your email to verify your account.");
-        // Optionally redirect after a delay if action didn't redirect (but it does)
       } catch (submissionError) {
         console.error(submissionError);
         setError("Something went wrong. Please try again.");
@@ -94,29 +91,6 @@ export function RegisterForm() {
         <CardDescription>
           Enter your information to get started
         </CardDescription>
-        <div className="space-y-3">
-          <Label>I am a</Label>
-          <RadioGroup
-            value={form.role}
-            onValueChange={(value) =>
-              setForm((prev) => ({ ...prev, role: value as "patient" | "doctor" | "admin" }))
-            }
-            className="grid grid-cols-3 gap-4"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="patient" id="patient" />
-              <Label htmlFor="patient" className="font-normal cursor-pointer">
-                Patient
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="admin" id="admin" />
-              <Label htmlFor="admin" className="font-normal cursor-pointer">
-                Admin
-              </Label>
-            </div>
-          </RadioGroup>
-        </div>
       </CardHeader>
       <CardContent>
         <form className="space-y-4" onSubmit={handleSubmit} noValidate>
@@ -222,6 +196,14 @@ export function RegisterForm() {
               className="font-medium text-primary hover:underline"
             >
               Sign in
+            </Link>
+          </div>
+          <div className="text-center text-sm text-muted-foreground pt-1">
+            <Link
+              href="/register-org"
+              className="font-medium text-primary hover:underline"
+            >
+              Register an Organization
             </Link>
           </div>
         </form>
