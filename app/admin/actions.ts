@@ -3,7 +3,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 
 export async function inviteDoctor(formData: FormData) {
     const supabase = await createClient()
@@ -16,12 +15,12 @@ export async function inviteDoctor(formData: FormData) {
 
     const { data: profile } = await supabase
         .from('profiles')
-        .select('role, organization_id')
+        .select('role, organisation_id')
         .eq('id', user.id)
         .single()
 
-    if (!profile || profile.role !== 'admin' || !profile.organization_id) {
-        return { error: 'Unauthorized: Only Organization Admins can invite doctors.' }
+    if (!profile || profile.role !== 'admin' || !profile.organisation_id) {
+        return { error: 'Unauthorized: Only Organisation Admins can invite doctors.' }
     }
 
     const email = formData.get('email') as string
@@ -43,7 +42,7 @@ export async function inviteDoctor(formData: FormData) {
         data: {
             full_name: fullName,
             role: 'doctor',
-            organization_id: profile.organization_id
+            organisation_id: profile.organisation_id
         }
     })
 
@@ -52,24 +51,16 @@ export async function inviteDoctor(formData: FormData) {
     }
 
     // 3. Create Profile for the invited doctor
-    // Note: inviteUserByEmail creates the user in auth.users. 
-    // We need to create the profile entry manually if we want it to exist before they accept?
-    // Actually, we can rely on the `data` metadata to populate the profile on signup/accept?
-    // Or we can insert into profiles now.
-    // The user ID exists in inviteData.user.id
-
     if (inviteData.user) {
         const { error: profileError } = await supabaseAdmin
             .from('profiles')
             .insert({
                 id: inviteData.user.id,
                 role: 'doctor',
-                organization_id: profile.organization_id
+                organisation_id: profile.organisation_id
             })
 
         if (profileError) {
-            // If profile creation fails, we might want to delete the invited user?
-            // For now, just return error.
             return { error: `Profile creation failed: ${profileError.message}` }
         }
     }
