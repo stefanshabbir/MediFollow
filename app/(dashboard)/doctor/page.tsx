@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { getAppointments, updateAppointmentStatus } from '@/app/appointments/actions'
+import { getAppointments, updateAppointmentStatus, getAppointmentRequests, approveAppointmentRequest, rejectAppointmentRequest } from '@/app/appointments/actions'
 
 export default function DoctorDashboard() {
   const [appointments, setAppointments] = useState<any[]>([])
+  const [appointmentRequests, setAppointmentRequests] = useState<any[]>([])
   const [profile, setProfile] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -16,6 +17,10 @@ export default function DoctorDashboard() {
       const appointmentsResult = await getAppointments('doctor')
       if (appointmentsResult.data) {
         setAppointments(appointmentsResult.data)
+      }
+      const requestsResult = await getAppointmentRequests('doctor')
+      if (requestsResult.data) {
+        setAppointmentRequests(requestsResult.data)
       }
       setIsLoading(false)
     }
@@ -29,6 +34,32 @@ export default function DoctorDashboard() {
       const appointmentsResult = await getAppointments('doctor')
       if (appointmentsResult.data) {
         setAppointments(appointmentsResult.data)
+      }
+    }
+  }
+
+  const handleApproveRequest = async (requestId: string) => {
+    const result = await approveAppointmentRequest(requestId)
+    if (result.success) {
+      // Refresh both requests and appointments
+      const requestsResult = await getAppointmentRequests('doctor')
+      if (requestsResult.data) {
+        setAppointmentRequests(requestsResult.data)
+      }
+      const appointmentsResult = await getAppointments('doctor')
+      if (appointmentsResult.data) {
+        setAppointments(appointmentsResult.data)
+      }
+    }
+  }
+
+  const handleRejectRequest = async (requestId: string) => {
+    const result = await rejectAppointmentRequest(requestId)
+    if (result.success) {
+      // Refresh requests
+      const requestsResult = await getAppointmentRequests('doctor')
+      if (requestsResult.data) {
+        setAppointmentRequests(requestsResult.data)
       }
     }
   }
@@ -96,6 +127,61 @@ export default function DoctorDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Pending Appointment Requests */}
+      {appointmentRequests.filter((req: any) => req.status === 'pending').length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Pending Appointment Requests</CardTitle>
+            <CardDescription>
+              Review and approve patient appointment requests
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {appointmentRequests
+                .filter((req: any) => req.status === 'pending')
+                .map((request: any) => (
+                  <div key={request.id} className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                    <div className="space-y-1 flex-1">
+                      <p className="font-semibold text-foreground">
+                        {request.patient?.full_name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(request.appointment_date).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })} at {request.start_time.substring(0, 5)} - {request.end_time.substring(0, 5)}
+                      </p>
+                      {request.notes && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Note: {request.notes}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleApproveRequest(request.id)}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleRejectRequest(request.id)}
+                      >
+                        Reject
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Today's Appointments */}
       <Card>

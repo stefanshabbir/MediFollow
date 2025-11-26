@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { getDoctors, getAvailableSlots, createAppointment } from "@/app/appointments/actions"
+import { getDoctors, getAvailableSlots, createAppointmentRequest } from "@/app/appointments/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -62,7 +62,7 @@ export default function BookAppointmentPage() {
         formData.append('endTime', selectedSlot.endTime)
         formData.append('notes', notes)
 
-        const result = await createAppointment(formData)
+        const result = await createAppointmentRequest(formData)
         setIsLoading(false)
 
         if (result.error) {
@@ -79,9 +79,9 @@ export default function BookAppointmentPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-foreground">Book Appointment</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground">Request Appointment</h1>
                     <p className="text-muted-foreground mt-1">
-                        Schedule a consultation with a doctor
+                        Submit an appointment request to a doctor
                     </p>
                 </div>
                 <Button asChild variant="outline">
@@ -179,7 +179,7 @@ export default function BookAppointmentPage() {
                         )}
 
                         <Button type="submit" disabled={isLoading || !selectedSlot} className="w-full">
-                            {isLoading ? "Booking..." : "Book Appointment"}
+                            {isLoading ? "Submitting Request..." : "Submit Appointment Request"}
                         </Button>
                     </form>
                 </CardContent>

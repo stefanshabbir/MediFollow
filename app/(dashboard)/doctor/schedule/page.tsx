@@ -155,8 +155,8 @@ export default function DoctorSchedulePage() {
 
                     {message && (
                         <div className={`text-sm p-3 rounded-md ${message.type === 'success'
-                                ? 'text-green-700 bg-green-50'
-                                : 'text-destructive bg-destructive/10'
+                            ? 'text-green-700 bg-green-50'
+                            : 'text-destructive bg-destructive/10'
                             }`}>
                             {message.text}
                         </div>

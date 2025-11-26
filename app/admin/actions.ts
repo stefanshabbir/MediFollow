@@ -43,7 +43,8 @@ export async function inviteDoctor(formData: FormData) {
             full_name: fullName,
             role: 'doctor',
             organisation_id: profile.organisation_id
-        }
+        },
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback?type=invite`
     })
 
     if (inviteError) {
@@ -56,6 +57,7 @@ export async function inviteDoctor(formData: FormData) {
             .from('profiles')
             .insert({
                 id: inviteData.user.id,
+                full_name: fullName,
                 role: 'doctor',
                 organisation_id: profile.organisation_id
             })

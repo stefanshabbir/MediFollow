@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
-import { getAppointments } from '@/app/appointments/actions'
+import { getAppointments, getAppointmentRequests } from '@/app/appointments/actions'
 
 export default async function PatientDashboard() {
   const supabase = await createClient()
@@ -16,6 +16,9 @@ export default async function PatientDashboard() {
 
   const appointmentsResult = await getAppointments('patient')
   const appointments = appointmentsResult.data || []
+
+  const requestsResult = await getAppointmentRequests('patient')
+  const appointmentRequests = requestsResult.data || []
 
   const upcomingAppointments = appointments.filter((apt: any) =>
     new Date(apt.appointment_date) >= new Date() && apt.status !== 'cancelled'
@@ -35,7 +38,7 @@ export default async function PatientDashboard() {
           </p>
         </div>
         <Button asChild size="lg">
-          <Link href="/patient/book">Book Appointment</Link>
+          <Link href="/patient/book">Request Appointment</Link>
         </Button>
       </div>
 
@@ -78,6 +81,52 @@ export default async function PatientDashboard() {
         </Card>
       </div>
 
+      {/* Appointment Requests */}
+      {appointmentRequests.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Appointment Requests</CardTitle>
+            <CardDescription>
+              Status of your appointment requests
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {appointmentRequests.map((request: any) => (
+                <div key={request.id} className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                  <div className="space-y-1 flex-1">
+                    <p className="font-semibold text-foreground">
+                      Dr. {request.doctor?.full_name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(request.appointment_date).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })} at {request.start_time.substring(0, 5)}
+                    </p>
+                    {request.notes && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Note: {request.notes}
+                      </p>
+                    )}
+                  </div>
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${request.status === 'approved'
+                      ? 'bg-green-100 text-green-800'
+                      : request.status === 'pending'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                    {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Upcoming Appointments */}
       <Card>
         <CardHeader>
@@ -111,8 +160,8 @@ export default async function PatientDashboard() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${appointment.status === 'confirmed'
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-yellow-100 text-yellow-800'
+                      ? 'bg-primary/10 text-primary'
+                      : 'bg-yellow-100 text-yellow-800'
                       }`}>
                       {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                     </span>

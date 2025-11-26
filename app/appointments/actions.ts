@@ -231,3 +231,215 @@ export async function getAvailableSlots(doctorId: string, date: string) {
 
     return { data: slots }
 }
+
+// Appointment Request Actions
+
+export async function createAppointmentRequest(formData: FormData) {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+        return { error: 'Unauthorized' }
+    }
+
+    const doctorId = formData.get('doctorId') as string
+    const appointmentDate = formData.get('appointmentDate') as string
+    const startTime = formData.get('startTime') as string
+    const endTime = formData.get('endTime') as string
+    const notes = formData.get('notes') as string
+
+    // Get doctor's organisation_id
+    const { data: doctorProfile } = await supabase
+        .from('profiles')
+        .select('organisation_id')
+        .eq('id', doctorId)
+        .single()
+
+    if (!doctorProfile) {
+        return { error: 'Doctor not found' }
+    }
+
+    const { error } = await supabase
+        .from('appointment_requests')
+        .insert({
+            patient_id: user.id,
+            doctor_id: doctorId,
+            organisation_id: doctorProfile.organisation_id,
+            appointment_date: appointmentDate,
+            start_time: startTime,
+            end_time: endTime,
+            notes: notes || null,
+            status: 'pending'
+        })
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    revalidatePath('/patient')
+    return { success: 'Appointment request submitted successfully! Awaiting doctor approval.' }
+}
+
+export async function getAppointmentRequests(role: string) {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+        return { error: 'Unauthorized' }
+    }
+
+    let query = supabase
+        .from('appointment_requests')
+        .select(`
+            *,
+            patient:patient_id(full_name),
+            doctor:doctor_id(full_name)
+        `)
+        .order('appointment_date', { ascending: true })
+        .order('start_time', { ascending: true })
+
+    if (role === 'patient') {
+        query = query.eq('patient_id', user.id)
+    } else if (role === 'doctor') {
+        query = query.eq('doctor_id', user.id)
+    } else if (role === 'admin') {
+        // Admins see all requests in their organisation
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('organisation_id')
+            .eq('id', user.id)
+            .single()
+
+        if (profile?.organisation_id) {
+            query = query.eq('organisation_id', profile.organisation_id)
+        }
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    return { data }
+}
+
+export async function approveAppointmentRequest(requestId: string) {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+        return { error: 'Unauthorized' }
+    }
+
+    // Get the request details
+    const { data: request, error: fetchError } = await supabase
+        .from('appointment_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single()
+
+    if (fetchError || !request) {
+        return { error: 'Request not found' }
+    }
+
+    // Verify user is the doctor or an admin in the organisation
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, organisation_id')
+        .eq('id', user.id)
+        .single()
+
+    const isAuthorized = request.doctor_id === user.id ||
+        (profile?.role === 'admin' && profile?.organisation_id === request.organisation_id)
+
+    if (!isAuthorized) {
+        return { error: 'Unauthorized to approve this request' }
+    }
+
+    // Create the appointment
+    const { data: appointment, error: appointmentError } = await supabase
+        .from('appointments')
+        .insert({
+            patient_id: request.patient_id,
+            doctor_id: request.doctor_id,
+            organisation_id: request.organisation_id,
+            appointment_date: request.appointment_date,
+            start_time: request.start_time,
+            end_time: request.end_time,
+            notes: request.notes,
+            status: 'confirmed'
+        })
+        .select()
+        .single()
+
+    if (appointmentError) {
+        return { error: appointmentError.message }
+    }
+
+    // Update the request status and link to appointment
+    const { error: updateError } = await supabase
+        .from('appointment_requests')
+        .update({
+            status: 'approved',
+            linked_appointment_id: appointment.id
+        })
+        .eq('id', requestId)
+
+    if (updateError) {
+        return { error: updateError.message }
+    }
+
+    revalidatePath('/doctor')
+    revalidatePath('/patient')
+    revalidatePath('/admin')
+    return { success: 'Appointment request approved and appointment created!' }
+}
+
+export async function rejectAppointmentRequest(requestId: string) {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+        return { error: 'Unauthorized' }
+    }
+
+    // Get the request to verify authorization
+    const { data: request, error: fetchError } = await supabase
+        .from('appointment_requests')
+        .select('doctor_id, organisation_id')
+        .eq('id', requestId)
+        .single()
+
+    if (fetchError || !request) {
+        return { error: 'Request not found' }
+    }
+
+    // Verify user is the doctor or an admin
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, organisation_id')
+        .eq('id', user.id)
+        .single()
+
+    const isAuthorized = request.doctor_id === user.id ||
+        (profile?.role === 'admin' && profile?.organisation_id === request.organisation_id)
+
+    if (!isAuthorized) {
+        return { error: 'Unauthorized to reject this request' }
+    }
+
+    const { error } = await supabase
+        .from('appointment_requests')
+        .update({ status: 'rejected' })
+        .eq('id', requestId)
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    revalidatePath('/doctor')
+    revalidatePath('/patient')
+    revalidatePath('/admin')
+    return { success: 'Appointment request rejected' }
+}
