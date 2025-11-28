@@ -3,8 +3,8 @@ import Link from "next/link";
 import { OrgRegisterForm } from "./org-register-form";
 
 export const metadata: Metadata = {
-    title: "Register Organization | MediFellow",
-    description: "Register your organization with MediFellow.",
+    title: "Register Organization | MediFollow",
+    description: "Register your organization with MediFollow.",
 };
 
 export default function RegisterOrgPage() {
@@ -16,12 +16,12 @@ export default function RegisterOrgPage() {
                         href="/"
                         className="inline-block text-2xl font-bold text-primary transition-colors hover:text-primary/90"
                     >
-                        MediFellow
+                        MediFollow
                     </Link>
                 </div>
                 <OrgRegisterForm />
                 <p className="mt-6 text-center text-xs text-muted-foreground">
-                    By continuing, you agree to MediFellow's{" "}
+                    By continuing, you agree to MediFollow's{" "}
                     <Link href="/terms" className="font-medium text-primary underline-offset-4 hover:underline">
                         Terms
                     </Link>{" "}

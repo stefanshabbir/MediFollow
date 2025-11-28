@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MediFellow - Healthcare Management Platform",
+  title: "MediFollow - Healthcare Management Platform",
   description: "Manage your medical appointments and follow-ups with ease",
 };
 

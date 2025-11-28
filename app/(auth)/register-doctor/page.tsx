@@ -94,7 +94,7 @@ export default function RegisterDoctorPage() {
                         href="/"
                         className="inline-block text-2xl font-bold text-primary transition-colors hover:text-primary/90"
                     >
-                        MediFellow
+                        MediFollow
                     </Link>
                 </div>
                 <Card className="border-0 shadow-lg">

@@ -12,7 +12,7 @@ export default function DashboardLayout({
                 <div className="flex h-16 items-center px-6">
                     <div className="flex items-center gap-8">
                         <Link href="/" className="flex items-center gap-2">
-                            <span className="text-xl font-bold text-primary">MediFellow</span>
+                            <span className="text-xl font-bold text-primary">MediFollow</span>
                         </Link>
                     </div>
                     <div className="ml-auto flex items-center gap-4">

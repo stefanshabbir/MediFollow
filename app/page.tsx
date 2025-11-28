@@ -14,7 +14,7 @@ export default function Home() {
               <span className="text-primary">made simple</span>
             </h1>
             <p className="mx-auto max-w-2xl text-lg text-muted-foreground lg:text-xl">
-              Streamline your medical appointments and follow-ups with MediFellow.
+              Streamline your medical appointments and follow-ups with MediFollow.
               A modern platform designed for patients, doctors, and healthcare organizations.
             </p>
           </div>
@@ -93,7 +93,7 @@ export default function Home() {
             Ready to get started?
           </h2>
           <p className="mt-4 text-lg text-primary-foreground/90">
-            Join thousands of users managing their healthcare with MediFellow
+            Join thousands of users managing their healthcare with MediFollow
           </p>
           <div className="mt-8">
             <Button asChild size="lg" variant="outline" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">

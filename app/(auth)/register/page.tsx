@@ -3,8 +3,8 @@ import Link from "next/link";
 import { RegisterForm } from "./register-form";
 
 export const metadata: Metadata = {
-  title: "Sign up | MediFellow",
-  description: "Create your MediFellow account to manage appointments.",
+  title: "Sign up | MediFollow",
+  description: "Create your MediFollow account to manage appointments.",
 };
 
 export default function RegisterPage() {
@@ -16,12 +16,12 @@ export default function RegisterPage() {
             href="/"
             className="inline-block text-2xl font-bold text-primary transition-colors hover:text-primary/90"
           >
-            MediFellow
+            MediFollow
           </Link>
         </div>
         <RegisterForm />
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          By continuing, you agree to MediFellow's{" "}
+          By continuing, you agree to MediFollow's{" "}
           <Link href="/terms" className="font-medium text-primary underline-offset-4 hover:underline">
             Terms
           </Link>{" "}
