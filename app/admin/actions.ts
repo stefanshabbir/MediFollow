@@ -44,7 +44,7 @@ export async function inviteDoctor(formData: FormData) {
             role: 'doctor',
             organisation_id: profile.organisation_id
         },
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback?type=invite`
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/set-password`
     })
 
     if (inviteError) {

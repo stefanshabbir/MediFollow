@@ -6,6 +6,7 @@ import { signup } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
@@ -77,6 +78,9 @@ export function RegisterForm() {
 
         setSuccess("Account created successfully! Please check your email to verify your account.");
       } catch (submissionError) {
+        if (isRedirectError(submissionError)) {
+          throw submissionError;
+        }
         console.error(submissionError);
         setError("Something went wrong. Please try again.");
       }

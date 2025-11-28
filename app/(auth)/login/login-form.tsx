@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { useState, useTransition } from "react";
 import { login } from "../actions";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,9 @@ export function LoginForm() {
 
         // Success is handled by redirect in action
       } catch (submissionError) {
+        if (isRedirectError(submissionError)) {
+          throw submissionError;
+        }
         console.error(submissionError);
         setError("Something went wrong. Please try again.");
       }

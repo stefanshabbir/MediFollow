@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { useState, useTransition } from "react";
 import { signupOrg } from "../actions";
 import { Button } from "@/components/ui/button";
@@ -78,6 +79,9 @@ export function OrgRegisterForm() {
 
                 setSuccess("Organization created successfully! Please check your email to verify your account.");
             } catch (submissionError) {
+                if (isRedirectError(submissionError)) {
+                    throw submissionError;
+                }
                 console.error(submissionError);
                 setError("Something went wrong. Please try again.");
             }

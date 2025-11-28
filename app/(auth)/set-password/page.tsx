@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,38 @@ export default function SetPasswordPage() {
     const [confirmPassword, setConfirmPassword] = useState("")
     const [error, setError] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(false)
+    const [isCheckingSession, setIsCheckingSession] = useState(true)
+
+    useEffect(() => {
+        const supabase = createClient()
+
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session) {
+                setIsCheckingSession(false)
+            }
+        }
+
+        checkSession()
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY') {
+                setIsCheckingSession(false)
+            }
+        })
+
+        return () => subscription.unsubscribe()
+    }, [])
+
+    if (isCheckingSession) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-muted px-4 py-12">
+                <div className="text-center">
+                    <p className="text-muted-foreground">Verifying invitation...</p>
+                </div>
+            </div>
+        )
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
