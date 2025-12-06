@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { getDoctors, getAvailableSlots, createAppointmentRequest } from "@/app/appointments/actions"
+import { getDoctors, getAvailableSlots, createAppointmentRequest, getOrganisations } from "@/app/appointments/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -12,6 +12,7 @@ import Link from "next/link"
 export default function BookAppointmentPage() {
     const router = useRouter()
     const [doctors, setDoctors] = useState<any[]>([])
+    const [organisations, setOrganisations] = useState<any[]>([])
     const [selectedOrg, setSelectedOrg] = useState("")
     const [selectedDoctor, setSelectedDoctor] = useState("")
     const [selectedDate, setSelectedDate] = useState("")
@@ -30,6 +31,16 @@ export default function BookAppointmentPage() {
             }
         }
         fetchDoctors()
+    }, [])
+
+    useEffect(() => {
+        async function fetchOrganisations() {
+            const result = await getOrganisations()
+            if (result.data) {
+                setOrganisations(result.data)
+            }
+        }
+        fetchOrganisations()
     }, [])
 
     useEffect(() => {
@@ -76,10 +87,6 @@ export default function BookAppointmentPage() {
 
     const minDate = new Date().toISOString().split('T')[0]
 
-    // Extract unique organisations from doctors list
-    const organisations = Array.from(new Set(doctors.map(d => JSON.stringify({ id: d.organisations?.id, name: d.organisations?.name }))))
-        .map(s => JSON.parse(s))
-        .filter(o => o.id && o.name)
 
     // Filter doctors based on selected organisation
     const filteredDoctors = selectedOrg

@@ -16,6 +16,7 @@ export async function createAppointment(formData: FormData) {
     const startTime = formData.get('startTime') as string
     const endTime = formData.get('endTime') as string
     const notes = formData.get('notes') as string
+    const previousAppointmentId = formData.get('previousAppointmentId') as string
 
     // Get doctor's organisation_id
     const { data: doctorProfile } = await supabase
@@ -38,7 +39,8 @@ export async function createAppointment(formData: FormData) {
             start_time: startTime,
             end_time: endTime,
             notes: notes || null,
-            status: 'pending'
+            status: 'pending',
+            previous_appointment_id: previousAppointmentId || null
         })
 
     if (error) {
@@ -47,6 +49,68 @@ export async function createAppointment(formData: FormData) {
 
     revalidatePath('/patient')
     return { success: 'Appointment booked successfully!' }
+}
+
+export async function scheduleFollowUp(formData: FormData) {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+        return { error: 'Unauthorized' }
+    }
+
+    const previousAppointmentId = formData.get('previousAppointmentId') as string
+    const appointmentDate = formData.get('appointmentDate') as string
+    const startTime = formData.get('startTime') as string
+    const endTime = formData.get('endTime') as string
+    const notes = formData.get('notes') as string
+
+    // Get previous appointment to verify access and get patient_id
+    const { data: previousAppointment, error: fetchError } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('id', previousAppointmentId)
+        .single()
+
+    if (fetchError || !previousAppointment) {
+        return { error: 'Previous appointment not found' }
+    }
+
+    // Verify user is the doctor or admin
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, organisation_id')
+        .eq('id', user.id)
+        .single()
+
+    const isAuthorized = previousAppointment.doctor_id === user.id ||
+        (profile?.role === 'admin' && profile?.organisation_id === previousAppointment.organisation_id)
+
+    if (!isAuthorized) {
+        return { error: 'Unauthorized to schedule follow-up for this appointment' }
+    }
+
+    const { error } = await supabase
+        .from('appointments')
+        .insert({
+            patient_id: previousAppointment.patient_id,
+            doctor_id: previousAppointment.doctor_id, // Same doctor
+            organisation_id: previousAppointment.organisation_id,
+            appointment_date: appointmentDate,
+            start_time: startTime,
+            end_time: endTime,
+            notes: notes || null,
+            status: 'confirmed', // Follow-ups scheduled by doctor are confirmed
+            previous_appointment_id: previousAppointmentId
+        })
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    revalidatePath('/doctor')
+    revalidatePath('/patient')
+    return { success: 'Follow-up appointment scheduled!' }
 }
 
 export async function getAppointments(role: string) {
@@ -116,6 +180,28 @@ export async function updateAppointmentStatus(appointmentId: string, status: str
     return { success: 'Appointment status updated!' }
 }
 
+export async function cancelAppointment(appointmentId: string) {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+        return { error: 'Unauthorized' }
+    }
+
+    const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'cancelled' })
+        .eq('id', appointmentId)
+        .eq('patient_id', user.id) // Ensure only the patient can cancel their own appointment
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    revalidatePath('/patient')
+    return { success: 'Appointment cancelled successfully' }
+}
+
 export async function getDoctors(organisationId?: string) {
     const supabase = await createClient()
 
@@ -134,6 +220,20 @@ export async function getDoctors(organisationId?: string) {
     }
 
     const { data, error } = await query
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    return { data }
+}
+
+export async function getOrganisations() {
+    const supabase = await createClient()
+
+    const { data, error } = await supabase
+        .from('organisations')
+        .select('id, name')
 
     if (error) {
         return { error: error.message }

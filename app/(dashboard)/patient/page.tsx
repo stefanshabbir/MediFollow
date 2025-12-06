@@ -1,24 +1,47 @@
-import { createClient } from '@/utils/supabase/server'
+"use client"
+
+import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
-import { getAppointments, getAppointmentRequests } from '@/app/appointments/actions'
+import { useEffect, useState } from 'react'
+import { getAppointments, getAppointmentRequests, cancelAppointment } from '@/app/appointments/actions'
 
-export default async function PatientDashboard() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export default function PatientDashboard() {
+  const [appointments, setAppointments] = useState<any[]>([])
+  const [appointmentRequests, setAppointmentRequests] = useState<any[]>([])
+  const [profile, setProfile] = useState<any>(null)
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user?.id)
-    .single()
+  useEffect(() => {
+    async function fetchData() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+        setProfile(profile)
 
-  const appointmentsResult = await getAppointments('patient')
-  const appointments = appointmentsResult.data || []
+        const appointmentsResult = await getAppointments('patient')
+        if (appointmentsResult.data) setAppointments(appointmentsResult.data)
 
-  const requestsResult = await getAppointmentRequests('patient')
-  const appointmentRequests = requestsResult.data || []
+        const requestsResult = await getAppointmentRequests('patient')
+        if (requestsResult.data) setAppointmentRequests(requestsResult.data)
+      }
+    }
+    fetchData()
+  }, [])
+
+  const handleCancelAppointment = async (appointmentId: string) => {
+    if (confirm('Are you sure you want to cancel this appointment?')) {
+      const result = await cancelAppointment(appointmentId)
+      if (result.success) {
+        // Refresh
+        const appointmentsResult = await getAppointments('patient')
+        if (appointmentsResult.data) setAppointments(appointmentsResult.data)
+      } else {
+        alert(result.error)
+      }
+    }
+  }
 
   const upcomingAppointments = appointments.filter((apt: any) =>
     new Date(apt.appointment_date) >= new Date() && apt.status !== 'cancelled'
@@ -113,10 +136,10 @@ export default async function PatientDashboard() {
                     )}
                   </div>
                   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${request.status === 'approved'
-                      ? 'bg-green-100 text-green-800'
-                      : request.status === 'pending'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
+                    ? 'bg-green-100 text-green-800'
+                    : request.status === 'pending'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-red-100 text-red-800'
                     }`}>
                     {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                   </span>
@@ -165,6 +188,13 @@ export default async function PatientDashboard() {
                       }`}>
                       {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                     </span>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleCancelAppointment(appointment.id)}
+                    >
+                      Cancel
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -207,9 +237,16 @@ export default async function PatientDashboard() {
                       })}
                     </p>
                   </div>
-                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                    {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                      {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                    </span>
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/patient/book?doctorId=${appointment.doctor_id}&previousAppointmentId=${appointment.id}`}>
+                        Book Follow-up
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -4,12 +4,15 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { getAppointments, updateAppointmentStatus, getAppointmentRequests, approveAppointmentRequest, rejectAppointmentRequest } from '@/app/appointments/actions'
+import { getAppointments, updateAppointmentStatus, getAppointmentRequests, approveAppointmentRequest, rejectAppointmentRequest, scheduleFollowUp } from '@/app/appointments/actions'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
 export default function DoctorDashboard() {
   const [appointments, setAppointments] = useState<any[]>([])
   const [appointmentRequests, setAppointmentRequests] = useState<any[]>([])
-  const [profile, setProfile] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -26,6 +29,47 @@ export default function DoctorDashboard() {
     }
     fetchData()
   }, [])
+
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null)
+  const [followUpDate, setFollowUpDate] = useState("")
+  const [followUpTime, setFollowUpTime] = useState("")
+  const [followUpNotes, setFollowUpNotes] = useState("")
+  const [isFollowUpOpen, setIsFollowUpOpen] = useState(false)
+
+  const handleScheduleFollowUp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedAppointment) return
+
+    const formData = new FormData()
+    formData.append('previousAppointmentId', selectedAppointment.id)
+    formData.append('appointmentDate', followUpDate)
+    formData.append('startTime', followUpTime + ":00")
+    // Simple 30 min duration for follow-up
+    const [hours, minutes] = followUpTime.split(':').map(Number)
+    const endDate = new Date()
+    endDate.setHours(hours, minutes + 30)
+    const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}:00`
+
+    formData.append('endTime', endTime)
+    formData.append('notes', followUpNotes)
+
+    const result = await scheduleFollowUp(formData)
+
+    if (result.success) {
+      setIsFollowUpOpen(false)
+      setFollowUpDate("")
+      setFollowUpTime("")
+      setFollowUpNotes("")
+      // Refresh appointments
+      const appointmentsResult = await getAppointments('doctor')
+      if (appointmentsResult.data) {
+        setAppointments(appointmentsResult.data)
+      }
+      alert(result.success)
+    } else {
+      alert(result.error)
+    }
+  }
 
   const handleStatusUpdate = async (appointmentId: string, status: string) => {
     const result = await updateAppointmentStatus(appointmentId, status)
@@ -236,6 +280,64 @@ export default function DoctorDashboard() {
                         Mark Complete
                       </Button>
                     )}
+                    {(appointment.status === 'completed' || appointment.status === 'confirmed') && (
+                      <Dialog open={isFollowUpOpen && selectedAppointment?.id === appointment.id} onOpenChange={(open) => {
+                        setIsFollowUpOpen(open)
+                        if (open) setSelectedAppointment(appointment)
+                      }}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="secondary" onClick={() => {
+                            setSelectedAppointment(appointment)
+                            setIsFollowUpOpen(true)
+                          }}>
+                            Follow Up
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Schedule Follow-up</DialogTitle>
+                            <DialogDescription>
+                              Schedule a follow-up appointment for {appointment.patient?.full_name}.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <form onSubmit={handleScheduleFollowUp} className="space-y-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="date">Date</Label>
+                              <Input
+                                id="date"
+                                type="date"
+                                required
+                                min={new Date().toISOString().split('T')[0]}
+                                value={followUpDate}
+                                onChange={(e) => setFollowUpDate(e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="time">Time</Label>
+                              <Input
+                                id="time"
+                                type="time"
+                                required
+                                value={followUpTime}
+                                onChange={(e) => setFollowUpTime(e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="notes">Notes</Label>
+                              <Textarea
+                                id="notes"
+                                placeholder="Reason for follow-up"
+                                value={followUpNotes}
+                                onChange={(e) => setFollowUpNotes(e.target.value)}
+                              />
+                            </div>
+                            <DialogFooter>
+                              <Button type="submit">Schedule</Button>
+                            </DialogFooter>
+                          </form>
+                        </DialogContent>
+                      </Dialog>
+                    )}
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${appointment.status === 'confirmed'
                       ? 'bg-primary/10 text-primary'
                       : appointment.status === 'pending'
@@ -257,45 +359,6 @@ export default function DoctorDashboard() {
           )}
         </CardContent>
       </Card>
-
-      {/* Upcoming Appointments */}
-      {upcomingAppointments.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Upcoming Appointments</CardTitle>
-            <CardDescription>
-              Future scheduled consultations
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {upcomingAppointments.slice(0, 5).map((appointment: any) => (
-                <div key={appointment.id} className="flex items-center justify-between p-4 rounded-lg border bg-card">
-                  <div className="space-y-1">
-                    <p className="font-semibold text-foreground">
-                      {appointment.patient?.full_name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(appointment.appointment_date).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })} at {appointment.start_time.substring(0, 5)}
-                    </p>
-                  </div>
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${appointment.status === 'confirmed'
-                    ? 'bg-primary/10 text-primary'
-                    : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                    {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
