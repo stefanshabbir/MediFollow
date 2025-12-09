@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 
 export async function createAppointment(formData: FormData) {
@@ -203,16 +204,26 @@ export async function cancelAppointment(appointmentId: string) {
 }
 
 export async function getDoctors(organisationId?: string) {
+    // Check if user is authenticated (optional but good practice)
     const supabase = await createClient()
-
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-        return { error: 'Unauthorized' }
-    }
+    if (!user) return { error: 'Unauthorized' }
 
-    let query = supabase
+    // Use Admin client to bypass RLS for public directory listing
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
+        }
+    )
+
+    let query = supabaseAdmin
         .from('profiles')
-        .select('id, full_name, organisation_id, organisations(name)')
+        .select('id, organisation_id, full_name')
         .eq('role', 'doctor')
 
     if (organisationId) {
@@ -222,39 +233,66 @@ export async function getDoctors(organisationId?: string) {
     const { data, error } = await query
 
     if (error) {
+        console.error("getDoctors Error:", error)
         return { error: error.message }
     }
 
+    console.log("getDoctors Data:", data?.length)
     return { data }
 }
 
-export async function getOrganisations() {
-    const supabase = await createClient()
 
-    const { data, error } = await supabase
+export async function getOrganisations() {
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
+        }
+    )
+
+    const { data, error } = await supabaseAdmin
         .from('organisations')
         .select('id, name')
 
     if (error) {
+        console.error("getOrganisations Error:", error)
         return { error: error.message }
     }
 
+    console.log("getOrganisations Data:", data?.length)
     return { data }
 }
 
 export async function getAvailableSlots(doctorId: string, date: string) {
-    const supabase = await createClient()
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
+        }
+    )
 
     // Get day of week for the selected date (0 = Sunday, 6 = Saturday)
     const dayOfWeek = new Date(date).getDay()
 
     // Get doctor's schedule for this day
-    const { data: scheduleData } = await supabase
+    const { data: scheduleData, error: scheduleError } = await supabaseAdmin
         .from('doctor_schedules')
         .select('*')
         .eq('doctor_id', doctorId)
         .eq('day_of_week', dayOfWeek)
         .single()
+
+    if (scheduleError) {
+        console.error("getAvailableSlots Error (Schedule):", scheduleError)
+    }
 
     // If doctor is not available on this day, return empty slots
     if (!scheduleData || !scheduleData.is_available) {
@@ -262,12 +300,16 @@ export async function getAvailableSlots(doctorId: string, date: string) {
     }
 
     // Get existing appointments for the doctor on this date
-    const { data: appointments } = await supabase
+    const { data: appointments, error: appointmentError } = await supabaseAdmin
         .from('appointments')
         .select('start_time, end_time')
         .eq('doctor_id', doctorId)
         .eq('appointment_date', date)
         .in('status', ['pending', 'confirmed'])
+
+    if (appointmentError) {
+        console.error("getAvailableSlots Error (Appointments):", appointmentError)
+    }
 
     // Parse doctor's working hours
     const startHour = parseInt(scheduleData.start_time.split(':')[0])

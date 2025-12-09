@@ -67,6 +67,7 @@ export function RegisterForm() {
         const formData = new FormData();
         formData.append('email', form.email);
         formData.append('password', form.password);
+        formData.append('fullName', form.fullName);
         // role is handled on server
 
         const result = await signup(formData);

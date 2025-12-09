@@ -52,7 +52,6 @@ export default function RegisterDoctorPage() {
                     password: form.password,
                     options: {
                         data: {
-                            full_name: form.fullName,
                             role: 'doctor',
                         },
                     },

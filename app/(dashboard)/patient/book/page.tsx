@@ -22,38 +22,62 @@ export default function BookAppointmentPage() {
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(false)
+    const [slotsLoading, setSlotsLoading] = useState(false)
 
+    // Load initial data
     useEffect(() => {
-        async function fetchDoctors() {
-            const result = await getDoctors()
-            if (result.data) {
-                setDoctors(result.data)
+        async function loadData() {
+            try {
+                console.log("Client: Fetching doctors and orgs...")
+                const [doctorsRes, orgsRes] = await Promise.all([
+                    getDoctors(),
+                    getOrganisations()
+                ])
+                console.log("Client: Doctors Response:", doctorsRes)
+                console.log("Client: Orgs Response:", orgsRes)
+
+                if (doctorsRes.error) console.error("Error fetching doctors:", doctorsRes.error)
+                if (orgsRes.error) console.error("Error fetching organisations:", orgsRes.error)
+
+                if (doctorsRes.data) setDoctors(doctorsRes.data)
+                if (orgsRes.data) setOrganisations(orgsRes.data)
+            } catch (err) {
+                console.error("Failed to load initial data", err)
             }
         }
-        fetchDoctors()
+        loadData()
     }, [])
 
-    useEffect(() => {
-        async function fetchOrganisations() {
-            const result = await getOrganisations()
-            if (result.data) {
-                setOrganisations(result.data)
-            }
-        }
-        fetchOrganisations()
-    }, [])
-
+    // Fetch slots when doctor and date change
     useEffect(() => {
         async function fetchSlots() {
-            if (selectedDoctor && selectedDate) {
+            if (!selectedDoctor || !selectedDate) {
+                setAvailableSlots([])
+                return
+            }
+
+            setSlotsLoading(true)
+            setSelectedSlot(null) // Reset selection
+            try {
                 const result = await getAvailableSlots(selectedDoctor, selectedDate)
                 if (result.data) {
                     setAvailableSlots(result.data)
+                } else {
+                    setAvailableSlots([])
                 }
+            } catch (err) {
+                console.error("Error fetching slots:", err)
+            } finally {
+                setSlotsLoading(false)
             }
         }
         fetchSlots()
     }, [selectedDoctor, selectedDate])
+
+    // Filter doctors based on selected organisation
+    const filteredDoctors = selectedOrg
+        ? doctors.filter(d => d.organisation_id === selectedOrg)
+        : []
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -74,24 +98,23 @@ export default function BookAppointmentPage() {
         formData.append('endTime', selectedSlot.endTime)
         formData.append('notes', notes)
 
-        const result = await createAppointmentRequest(formData)
-        setIsLoading(false)
+        try {
+            const result = await createAppointmentRequest(formData)
 
-        if (result.error) {
-            setError(result.error)
-        } else if (result.success) {
-            setSuccess(result.success)
-            setTimeout(() => router.push('/patient'), 2000)
+            if (result.error) {
+                setError(result.error)
+            } else if (result.success) {
+                setSuccess(result.success)
+                setTimeout(() => router.push('/patient'), 2000)
+            }
+        } catch (err) {
+            setError("An unexpected error occurred.")
+        } finally {
+            setIsLoading(false)
         }
     }
 
     const minDate = new Date().toISOString().split('T')[0]
-
-
-    // Filter doctors based on selected organisation
-    const filteredDoctors = selectedOrg
-        ? doctors.filter(d => d.organisations?.id === selectedOrg)
-        : []
 
     return (
         <div className="space-y-6">
@@ -111,7 +134,7 @@ export default function BookAppointmentPage() {
                 <CardHeader>
                     <CardTitle>Appointment Details</CardTitle>
                     <CardDescription>
-                        Select a doctor, date, and time for your appointment
+                        Select a clinic, doctor, date, and time for your appointment
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -126,7 +149,7 @@ export default function BookAppointmentPage() {
                                     setSelectedOrg(e.target.value)
                                     setSelectedDoctor("") // Reset doctor when clinic changes
                                 }}
-                                className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                                 required
                             >
                                 <option value="">Choose a clinic...</option>
@@ -145,16 +168,16 @@ export default function BookAppointmentPage() {
                                 id="doctor"
                                 value={selectedDoctor}
                                 onChange={(e) => setSelectedDoctor(e.target.value)}
-                                className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                                 required
                                 disabled={!selectedOrg}
                             >
                                 <option value="">
                                     {!selectedOrg ? "Select a clinic first..." : "Choose a doctor..."}
                                 </option>
-                                {filteredDoctors.map((doctor) => (
-                                    <option key={doctor.id} value={doctor.id}>
-                                        {doctor.full_name}
+                                {filteredDoctors.map((doc) => (
+                                    <option key={doc.id} value={doc.id}>
+                                        {doc.full_name || 'Unknown Doctor'}
                                     </option>
                                 ))}
                             </select>
@@ -170,6 +193,7 @@ export default function BookAppointmentPage() {
                                 value={selectedDate}
                                 onChange={(e) => setSelectedDate(e.target.value)}
                                 required
+                                disabled={!selectedDoctor}
                             />
                         </div>
 
@@ -177,19 +201,24 @@ export default function BookAppointmentPage() {
                         {selectedDate && selectedDoctor && (
                             <div className="space-y-2">
                                 <Label>Available Time Slots</Label>
-                                {availableSlots.length > 0 ? (
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {availableSlots.map((slot, index) => (
-                                            <Button
-                                                key={index}
-                                                type="button"
-                                                variant={selectedSlot === slot ? "default" : "outline"}
-                                                onClick={() => setSelectedSlot(slot)}
-                                                className="w-full"
-                                            >
-                                                {slot.startTime.substring(0, 5)}
-                                            </Button>
-                                        ))}
+                                {slotsLoading ? (
+                                    <div className="text-sm text-muted-foreground">Loading slots...</div>
+                                ) : availableSlots.length > 0 ? (
+                                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
+                                        {availableSlots.map((slot, index) => {
+                                            const isSelected = selectedSlot?.startTime === slot.startTime
+                                            return (
+                                                <Button
+                                                    key={index}
+                                                    type="button"
+                                                    variant={isSelected ? "default" : "outline"}
+                                                    onClick={() => setSelectedSlot(slot)}
+                                                    className={`w-full ${isSelected ? 'ring-2 ring-primary' : ''}`}
+                                                >
+                                                    {slot.startTime.substring(0, 5)}
+                                                </Button>
+                                            )
+                                        })}
                                     </div>
                                 ) : (
                                     <p className="text-sm text-muted-foreground">No available slots for this date</p>
@@ -205,7 +234,7 @@ export default function BookAppointmentPage() {
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
                                 placeholder="Any specific concerns or symptoms..."
-                                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                             />
                         </div>
 

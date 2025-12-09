@@ -19,6 +19,27 @@ export async function login(formData: FormData) {
         return { error: error.message }
     }
 
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (user) {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+
+        if (profile?.role === 'admin') {
+            revalidatePath('/admin', 'layout')
+            redirect('/admin')
+        } else if (profile?.role === 'doctor') {
+            revalidatePath('/doctor', 'layout')
+            redirect('/doctor')
+        } else {
+            revalidatePath('/patient', 'layout')
+            redirect('/patient')
+        }
+    }
+
     revalidatePath('/', 'layout')
     redirect('/')
 }
@@ -31,7 +52,6 @@ export async function signup(formData: FormData) {
         password: formData.get('password') as string,
         options: {
             data: {
-                full_name: formData.get('fullName') as string,
                 role: 'patient', // Enforce patient role
             },
         },
@@ -46,6 +66,7 @@ export async function signup(formData: FormData) {
     if (authData.user) {
         const { error: profileError } = await supabase.from('profiles').insert({
             id: authData.user.id,
+            full_name: formData.get('fullName') as string,
             role: 'patient', // Enforce patient role
         })
 
@@ -72,7 +93,6 @@ export async function signupOrg(formData: FormData) {
         password,
         options: {
             data: {
-                full_name: fullName,
                 role: 'admin',
             },
         },
@@ -98,6 +118,7 @@ export async function signupOrg(formData: FormData) {
         const { error: profileError } = await supabase.from('profiles').insert({
             id: authData.user.id,
             role: 'admin',
+            full_name: fullName,
             organisation_id: orgData.id,
         })
 

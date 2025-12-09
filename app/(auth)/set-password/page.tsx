@@ -20,7 +20,8 @@ export default function SetPasswordPage() {
         const supabase = createClient()
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY') {
+            console.log("Auth event:", event, session)
+            if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED' || session) {
                 setIsCheckingSession(false)
             }
         })

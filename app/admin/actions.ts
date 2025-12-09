@@ -40,7 +40,6 @@ export async function inviteDoctor(formData: FormData) {
 
     const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
         data: {
-            full_name: fullName,
             role: 'doctor',
             organisation_id: profile.organisation_id
         },
@@ -58,6 +57,7 @@ export async function inviteDoctor(formData: FormData) {
             .insert({
                 id: inviteData.user.id,
                 role: 'doctor',
+                full_name: fullName,
                 organisation_id: profile.organisation_id
             })
 
