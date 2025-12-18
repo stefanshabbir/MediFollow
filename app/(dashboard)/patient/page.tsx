@@ -1,54 +1,38 @@
-"use client"
-
-import { createClient } from '@/utils/supabase/client'
+import { createClient } from '@/utils/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import { getAppointments, getAppointmentRequests, cancelAppointment } from '@/app/appointments/actions'
+import { getAppointments, getAppointmentRequests } from '@/app/appointments/actions'
+import { AppointmentRequestsTable } from '@/app/components/appointment-requests-table'
+import { CancelAppointmentButton } from '@/app/components/cancel-appointment-button'
+import { redirect } from 'next/navigation'
 
-export default function PatientDashboard() {
-  const [appointments, setAppointments] = useState<any[]>([])
-  const [appointmentRequests, setAppointmentRequests] = useState<any[]>([])
-  const [profile, setProfile] = useState<any>(null)
+export default async function PatientDashboard() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  useEffect(() => {
-    async function fetchData() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-        setProfile(profile)
-
-        const appointmentsResult = await getAppointments('patient')
-        if (appointmentsResult.data) setAppointments(appointmentsResult.data)
-
-        const requestsResult = await getAppointmentRequests('patient')
-        if (requestsResult.data) setAppointmentRequests(requestsResult.data)
-      }
-    }
-    fetchData()
-  }, [])
-
-  const handleCancelAppointment = async (appointmentId: string) => {
-    if (confirm('Are you sure you want to cancel this appointment?')) {
-      const result = await cancelAppointment(appointmentId)
-      if (result.success) {
-        // Refresh
-        const appointmentsResult = await getAppointments('patient')
-        if (appointmentsResult.data) setAppointments(appointmentsResult.data)
-      } else {
-        alert(result.error)
-      }
-    }
+  if (!user) {
+    redirect('/auth/login')
   }
 
-  const upcomingAppointments = appointments.filter((apt: any) =>
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+
+  const { data: appointments } = await getAppointments('patient')
+  const { data: appointmentRequests } = await getAppointmentRequests('patient')
+
+  console.log('server: appointmentRequests', appointmentRequests)
+
+  const upcomingAppointments = appointments?.filter((apt: any) =>
     new Date(apt.appointment_date) >= new Date() && apt.status !== 'cancelled'
-  )
-  const pastAppointments = appointments.filter((apt: any) =>
+  ) || []
+
+  const pastAppointments = appointments?.filter((apt: any) =>
     new Date(apt.appointment_date) < new Date() || apt.status === 'completed'
-  )
+  ) || []
 
   return (
     <div className="space-y-8">
@@ -105,50 +89,17 @@ export default function PatientDashboard() {
       </div>
 
       {/* Appointment Requests */}
-      {appointmentRequests.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Appointment Requests</CardTitle>
-            <CardDescription>
-              Status of your appointment requests
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {appointmentRequests.map((request: any) => (
-                <div key={request.id} className="flex items-center justify-between p-4 rounded-lg border bg-card">
-                  <div className="space-y-1 flex-1">
-                    <p className="font-semibold text-foreground">
-                      Dr. {request.doctor?.full_name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(request.appointment_date).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })} at {request.start_time.substring(0, 5)}
-                    </p>
-                    {request.notes && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Note: {request.notes}
-                      </p>
-                    )}
-                  </div>
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${request.status === 'approved'
-                    ? 'bg-green-100 text-green-800'
-                    : request.status === 'pending'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-red-100 text-red-800'
-                    }`}>
-                    {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Appointment Requests</CardTitle>
+          <CardDescription>
+            Status of your appointment requests
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AppointmentRequestsTable initialRequests={appointmentRequests || []} role="patient" />
+        </CardContent>
+      </Card>
 
       {/* Upcoming Appointments */}
       <Card>
@@ -188,13 +139,7 @@ export default function PatientDashboard() {
                       }`}>
                       {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                     </span>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleCancelAppointment(appointment.id)}
-                    >
-                      Cancel
-                    </Button>
+                    <CancelAppointmentButton id={appointment.id} />
                   </div>
                 </div>
               ))}

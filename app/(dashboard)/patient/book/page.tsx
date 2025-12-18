@@ -1,26 +1,34 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { getDoctors, getAvailableSlots, createAppointmentRequest, getOrganisations } from "@/app/appointments/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { toast } from "sonner"
 import Link from "next/link"
 
-export default function BookAppointmentPage() {
+function BookAppointmentForm() {
     const router = useRouter()
+    const searchParams = useSearchParams()
+
+    // Get query params for follow-up
+    const preselectedDoctorId = searchParams.get('doctorId')
+    const previousAppointmentId = searchParams.get('previousAppointmentId')
+    const isFollowUp = !!previousAppointmentId
+
     const [doctors, setDoctors] = useState<any[]>([])
     const [organisations, setOrganisations] = useState<any[]>([])
+
+    // State
     const [selectedOrg, setSelectedOrg] = useState("")
-    const [selectedDoctor, setSelectedDoctor] = useState("")
+    const [selectedDoctor, setSelectedDoctor] = useState(preselectedDoctorId || "")
     const [selectedDate, setSelectedDate] = useState("")
     const [availableSlots, setAvailableSlots] = useState<any[]>([])
     const [selectedSlot, setSelectedSlot] = useState<any>(null)
-    const [notes, setNotes] = useState("")
-    const [error, setError] = useState<string | null>(null)
-    const [success, setSuccess] = useState<string | null>(null)
+    const [notes, setNotes] = useState(isFollowUp ? "Follow-up appointment" : "")
     const [isLoading, setIsLoading] = useState(false)
     const [slotsLoading, setSlotsLoading] = useState(false)
 
@@ -28,25 +36,37 @@ export default function BookAppointmentPage() {
     useEffect(() => {
         async function loadData() {
             try {
-                console.log("Client: Fetching doctors and orgs...")
                 const [doctorsRes, orgsRes] = await Promise.all([
                     getDoctors(),
                     getOrganisations()
                 ])
-                console.log("Client: Doctors Response:", doctorsRes)
-                console.log("Client: Orgs Response:", orgsRes)
 
-                if (doctorsRes.error) console.error("Error fetching doctors:", doctorsRes.error)
-                if (orgsRes.error) console.error("Error fetching organisations:", orgsRes.error)
+                if (doctorsRes.error) {
+                    toast.error("Error fetching doctors")
+                } else {
+                    setDoctors(doctorsRes.data || [])
 
-                if (doctorsRes.data) setDoctors(doctorsRes.data)
-                if (orgsRes.data) setOrganisations(orgsRes.data)
+                    // If preselected doctor, find their org to select it automatically
+                    if (preselectedDoctorId && doctorsRes.data) {
+                        const doctor = doctorsRes.data.find((d: any) => d.id === preselectedDoctorId)
+                        if (doctor) {
+                            setSelectedOrg(doctor.organisation_id)
+                        }
+                    }
+                }
+
+                if (orgsRes.error) {
+                    toast.error("Error fetching organisations")
+                } else {
+                    setOrganisations(orgsRes.data || [])
+                }
             } catch (err) {
                 console.error("Failed to load initial data", err)
+                toast.error("Failed to load initial data")
             }
         }
         loadData()
-    }, [])
+    }, [preselectedDoctorId])
 
     // Fetch slots when doctor and date change
     useEffect(() => {
@@ -67,6 +87,7 @@ export default function BookAppointmentPage() {
                 }
             } catch (err) {
                 console.error("Error fetching slots:", err)
+                toast.error("Failed to load available slots")
             } finally {
                 setSlotsLoading(false)
             }
@@ -81,12 +102,10 @@ export default function BookAppointmentPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        setError(null)
-        setSuccess(null)
         setIsLoading(true)
 
         if (!selectedDoctor || !selectedDate || !selectedSlot) {
-            setError("Please select a doctor, date, and time slot")
+            toast.error("Please select a doctor, date, and time slot")
             setIsLoading(false)
             return
         }
@@ -97,18 +116,21 @@ export default function BookAppointmentPage() {
         formData.append('startTime', selectedSlot.startTime)
         formData.append('endTime', selectedSlot.endTime)
         formData.append('notes', notes)
+        if (previousAppointmentId) {
+            formData.append('previousAppointmentId', previousAppointmentId)
+        }
 
         try {
             const result = await createAppointmentRequest(formData)
 
             if (result.error) {
-                setError(result.error)
+                toast.error(result.error)
             } else if (result.success) {
-                setSuccess(result.success)
+                toast.success(result.success)
                 setTimeout(() => router.push('/patient'), 2000)
             }
         } catch (err) {
-            setError("An unexpected error occurred.")
+            toast.error("An unexpected error occurred.")
         } finally {
             setIsLoading(false)
         }
@@ -120,9 +142,13 @@ export default function BookAppointmentPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-foreground">Request Appointment</h1>
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                        {isFollowUp ? "Book Follow-up" : "Request Appointment"}
+                    </h1>
                     <p className="text-muted-foreground mt-1">
-                        Submit an appointment request to a doctor
+                        {isFollowUp
+                            ? "Schedule a follow-up visit with your doctor"
+                            : "Submit an appointment request to a doctor"}
                     </p>
                 </div>
                 <Button asChild variant="outline">
@@ -170,7 +196,7 @@ export default function BookAppointmentPage() {
                                 onChange={(e) => setSelectedDoctor(e.target.value)}
                                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                                 required
-                                disabled={!selectedOrg}
+                                disabled={!selectedOrg || (isFollowUp && !!preselectedDoctorId)}
                             >
                                 <option value="">
                                     {!selectedOrg ? "Select a clinic first..." : "Choose a doctor..."}
@@ -181,6 +207,11 @@ export default function BookAppointmentPage() {
                                     </option>
                                 ))}
                             </select>
+                            {isFollowUp && preselectedDoctorId && (
+                                <p className="text-xs text-muted-foreground">
+                                    Doctor locked for follow-up appointment
+                                </p>
+                            )}
                         </div>
 
                         {/* Date Selection */}
@@ -238,24 +269,20 @@ export default function BookAppointmentPage() {
                             />
                         </div>
 
-                        {error && (
-                            <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
-                                {error}
-                            </div>
-                        )}
-
-                        {success && (
-                            <div className="text-sm text-green-700 bg-green-50 p-3 rounded-md">
-                                {success}
-                            </div>
-                        )}
-
                         <Button type="submit" disabled={isLoading || !selectedSlot} className="w-full">
-                            {isLoading ? "Submitting Request..." : "Submit Appointment Request"}
+                            {isLoading ? "Submitting Request..." : (isFollowUp ? "Schedule Follow-up" : "Submit Appointment Request")}
                         </Button>
                     </form>
                 </CardContent>
             </Card>
         </div>
+    )
+}
+
+export default function BookAppointmentPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <BookAppointmentForm />
+        </Suspense>
     )
 }

@@ -152,6 +152,7 @@ export async function getAppointments(role: string) {
     const { data, error } = await query
 
     if (error) {
+        console.error("getAppointments Error:", error)
         return { error: error.message }
     }
 
@@ -460,6 +461,7 @@ export async function getAppointmentRequests(role: string) {
     const { data, error } = await query
 
     if (error) {
+        console.error("getAppointmentRequests Error:", error)
         return { error: error.message }
     }
 
