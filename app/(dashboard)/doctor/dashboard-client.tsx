@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { getAppointments, updateAppointmentStatus, scheduleFollowUp } from '@/app/appointments/actions'
+import { getAppointments, updateAppointmentStatus, scheduleFollowUp, initiateAppointmentCheckout } from '@/app/appointments/actions'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -71,6 +71,21 @@ export function DoctorDashboardClient({ initialAppointments, initialRequests }: 
                 setAppointments(appointmentsResult.data)
             }
         }
+    }
+
+    const handleSendToCheckout = async (appointmentId: string, regenerate?: boolean) => {
+        const result = await initiateAppointmentCheckout(appointmentId, { regenerate })
+        if (result.error) {
+            toast.error(result.error)
+            return
+        }
+
+        const appointmentsResult = await getAppointments('doctor')
+        if (appointmentsResult.data) {
+            setAppointments(appointmentsResult.data)
+        }
+
+        toast.success('Payment checkout created. Patient will be prompted to pay.')
     }
 
     const today = new Date().toISOString().split('T')[0]
@@ -198,12 +213,21 @@ export function DoctorDashboardClient({ initialAppointments, initialRequests }: 
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={() => handleStatusUpdate(appointment.id, 'completed')}
+                                                onClick={() => handleSendToCheckout(appointment.id)}
                                             >
-                                                Mark Complete
+                                                Send to Payment
                                             </Button>
                                         )}
-                                        {(appointment.status === 'completed' || appointment.status === 'confirmed') && (
+                                        {appointment.status === 'awaiting_payment' && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => handleSendToCheckout(appointment.id, true)}
+                                            >
+                                                Regenerate Checkout
+                                            </Button>
+                                        )}
+                                        {appointment.status === 'completed' && (
                                             <Dialog open={isFollowUpOpen && selectedAppointment?.id === appointment.id} onOpenChange={(open) => {
                                                 setIsFollowUpOpen(open)
                                                 if (open) setSelectedAppointment(appointment)
@@ -265,7 +289,9 @@ export function DoctorDashboardClient({ initialAppointments, initialRequests }: 
                                             ? 'bg-primary/10 text-primary'
                                             : appointment.status === 'pending'
                                                 ? 'bg-yellow-100 text-yellow-800'
-                                                : 'bg-gray-100 text-gray-800'
+                                                : appointment.status === 'awaiting_payment'
+                                                    ? 'bg-orange-100 text-orange-800'
+                                                    : 'bg-gray-100 text-gray-800'
                                             }`}>
                                             {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                                         </span>

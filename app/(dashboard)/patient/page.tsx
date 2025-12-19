@@ -26,6 +26,12 @@ export default async function PatientDashboard() {
 
   console.log('server: appointmentRequests', appointmentRequests)
 
+  const pendingPayment = appointments?.find((apt: any) => apt.status === 'awaiting_payment' && apt.payment_status === 'pending')
+
+  if (pendingPayment) {
+    redirect(`/patient/checkout?appointmentId=${pendingPayment.id}`)
+  }
+
   const upcomingAppointments = appointments?.filter((apt: any) =>
     new Date(apt.appointment_date) >= new Date() && apt.status !== 'cancelled'
   ) || []
@@ -135,7 +141,9 @@ export default async function PatientDashboard() {
                   <div className="flex items-center gap-2">
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${appointment.status === 'confirmed'
                       ? 'bg-primary/10 text-primary'
-                      : 'bg-yellow-100 text-yellow-800'
+                      : appointment.status === 'awaiting_payment'
+                        ? 'bg-orange-100 text-orange-800'
+                        : 'bg-yellow-100 text-yellow-800'
                       }`}>
                       {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                     </span>

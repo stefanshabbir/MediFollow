@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { deleteDoctor } from "@/app/admin/actions"
+import { deleteDoctor, updateDoctorFee } from "@/app/admin/actions"
 import { Button } from "@/components/ui/button"
 import {
     AlertDialog,
@@ -14,11 +14,20 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 
 export function DoctorsTable({ initialDoctors }: { initialDoctors: any[] }) {
     const [doctors, setDoctors] = useState(initialDoctors)
     const [isDeleting, setIsDeleting] = useState(false)
+    const [savingFeeId, setSavingFeeId] = useState<string | null>(null)
+    const [feeValues, setFeeValues] = useState<Record<string, string>>(() => {
+        const map: Record<string, string> = {}
+        initialDoctors.forEach((doctor: any) => {
+            map[doctor.id] = ((doctor.fee_cents ?? 0) / 100).toString()
+        })
+        return map
+    })
 
     const handleDelete = async (doctorId: string) => {
         setIsDeleting(true)
@@ -35,6 +44,31 @@ export function DoctorsTable({ initialDoctors }: { initialDoctors: any[] }) {
             toast.error("An error occurred while deleting")
         } finally {
             setIsDeleting(false)
+        }
+    }
+
+    const handleSaveFee = async (doctorId: string) => {
+        setSavingFeeId(doctorId)
+        try {
+            const value = feeValues[doctorId] ?? "0"
+            const rupees = parseFloat(value)
+            if (Number.isNaN(rupees) || rupees < 0) {
+                toast.error("Please enter a valid fee")
+                return
+            }
+
+            const feeCents = Math.round(rupees * 100)
+            const result = await updateDoctorFee(doctorId, feeCents)
+            if (result.success) {
+                setDoctors(doctors.map(d => d.id === doctorId ? { ...d, fee_cents: feeCents } : d))
+                toast.success(result.success)
+            } else {
+                toast.error(result.error)
+            }
+        } catch (error) {
+            toast.error("An error occurred while updating the fee")
+        } finally {
+            setSavingFeeId(null)
         }
     }
 
@@ -55,6 +89,7 @@ export function DoctorsTable({ initialDoctors }: { initialDoctors: any[] }) {
                     <tr>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Name</th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Role</th>
+                        <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Fee (LKR)</th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-foreground">Status</th>
                         <th className="px-6 py-3 text-right text-sm font-semibold text-foreground">Actions</th>
                     </tr>
@@ -67,6 +102,26 @@ export function DoctorsTable({ initialDoctors }: { initialDoctors: any[] }) {
                             </td>
                             <td className="px-6 py-4 text-sm text-muted-foreground">
                                 Doctor
+                            </td>
+                            <td className="px-6 py-4 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-3">
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        className="max-w-[140px]"
+                                        value={feeValues[doctor.id] ?? ''}
+                                        onChange={(e) => setFeeValues(prev => ({ ...prev, [doctor.id]: e.target.value }))}
+                                    />
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        onClick={() => handleSaveFee(doctor.id)}
+                                        disabled={savingFeeId === doctor.id}
+                                    >
+                                        {savingFeeId === doctor.id ? "Saving..." : "Save"}
+                                    </Button>
+                                </div>
                             </td>
                             <td className="px-6 py-4">
                                 <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">

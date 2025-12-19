@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { randomUUID } from 'crypto'
 import { revalidatePath } from 'next/cache'
 
 export async function createAppointment(formData: FormData) {
@@ -19,10 +20,10 @@ export async function createAppointment(formData: FormData) {
     const notes = formData.get('notes') as string
     const previousAppointmentId = formData.get('previousAppointmentId') as string
 
-    // Get doctor's organisation_id
+    // Get doctor's organisation_id and fee
     const { data: doctorProfile } = await supabase
         .from('profiles')
-        .select('organisation_id')
+        .select('organisation_id, fee_cents')
         .eq('id', doctorId)
         .single()
 
@@ -41,6 +42,9 @@ export async function createAppointment(formData: FormData) {
             end_time: endTime,
             notes: notes || null,
             status: 'pending',
+            payment_status: 'pending',
+            payment_amount_cents: doctorProfile.fee_cents ?? 0,
+            currency: 'LKR',
             previous_appointment_id: previousAppointmentId || null
         })
 
@@ -91,6 +95,12 @@ export async function scheduleFollowUp(formData: FormData) {
         return { error: 'Unauthorized to schedule follow-up for this appointment' }
     }
 
+    const { data: doctorProfile } = await supabase
+        .from('profiles')
+        .select('fee_cents')
+        .eq('id', previousAppointment.doctor_id)
+        .single()
+
     const { error } = await supabase
         .from('appointments')
         .insert({
@@ -102,6 +112,9 @@ export async function scheduleFollowUp(formData: FormData) {
             end_time: endTime,
             notes: notes || null,
             status: 'confirmed', // Follow-ups scheduled by doctor are confirmed
+            payment_status: 'pending',
+            payment_amount_cents: doctorProfile?.fee_cents ?? 0,
+            currency: 'LKR',
             previous_appointment_id: previousAppointmentId
         })
 
@@ -167,6 +180,10 @@ export async function updateAppointmentStatus(appointmentId: string, status: str
         return { error: 'Unauthorized' }
     }
 
+    if (status === 'completed') {
+        return { error: 'Complete via checkout to record payment.' }
+    }
+
     const { error } = await supabase
         .from('appointments')
         .update({ status })
@@ -224,7 +241,7 @@ export async function getDoctors(organisationId?: string) {
 
     let query = supabaseAdmin
         .from('profiles')
-        .select('id, organisation_id, full_name')
+        .select('id, organisation_id, full_name, fee_cents')
         .eq('role', 'doctor')
 
     if (organisationId) {
@@ -501,6 +518,12 @@ export async function approveAppointmentRequest(requestId: string) {
         return { error: 'Unauthorized to approve this request' }
     }
 
+    const { data: doctorProfile } = await supabase
+        .from('profiles')
+        .select('fee_cents')
+        .eq('id', request.doctor_id)
+        .single()
+
     // Create the appointment
     const { data: appointment, error: appointmentError } = await supabase
         .from('appointments')
@@ -512,7 +535,10 @@ export async function approveAppointmentRequest(requestId: string) {
             start_time: request.start_time,
             end_time: request.end_time,
             notes: request.notes,
-            status: 'confirmed'
+            status: 'confirmed',
+            payment_status: 'pending',
+            payment_amount_cents: doctorProfile?.fee_cents ?? 0,
+            currency: 'LKR'
         })
         .select()
         .single()
@@ -586,4 +612,119 @@ export async function rejectAppointmentRequest(requestId: string) {
     revalidatePath('/patient')
     revalidatePath('/admin')
     return { success: 'Appointment request rejected' }
+}
+
+export async function initiateAppointmentCheckout(appointmentId: string, options?: { regenerate?: boolean }) {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+        return { error: 'Unauthorized' }
+    }
+
+    const { data: appointment, error: fetchError } = await supabase
+        .from('appointments')
+        .select('*, doctor:doctor_id(fee_cents)')
+        .eq('id', appointmentId)
+        .single()
+
+    if (fetchError || !appointment) {
+        return { error: 'Appointment not found' }
+    }
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, organisation_id')
+        .eq('id', user.id)
+        .single()
+
+    const isDoctor = appointment.doctor_id === user.id
+    const isPatient = appointment.patient_id === user.id
+    const isAdmin = profile?.role === 'admin' && profile.organisation_id === appointment.organisation_id
+
+    if (!isDoctor && !isPatient && !isAdmin) {
+        return { error: 'Unauthorized to start checkout for this appointment' }
+    }
+
+    const paymentAmountCents = appointment.payment_amount_cents ?? appointment.doctor?.fee_cents ?? 0
+    const paymentIntentId = options?.regenerate || !appointment.payment_intent_id
+        ? `pi_${randomUUID()}`
+        : appointment.payment_intent_id
+
+    const checkoutUrl = `https://checkout.stripe.com/pay/${paymentIntentId}`
+
+    const { error: updateError } = await supabase
+        .from('appointments')
+        .update({
+            status: 'awaiting_payment',
+            payment_status: 'pending',
+            payment_amount_cents: paymentAmountCents,
+            currency: appointment.currency || 'LKR',
+            payment_intent_id: paymentIntentId
+        })
+        .eq('id', appointmentId)
+
+    if (updateError) {
+        return { error: updateError.message }
+    }
+
+    revalidatePath('/patient')
+    revalidatePath('/doctor')
+    revalidatePath('/admin')
+    return { checkoutUrl }
+}
+
+export async function completeAppointmentPayment(appointmentId: string) {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+        return { error: 'Unauthorized' }
+    }
+
+    const { data: appointment, error: fetchError } = await supabase
+        .from('appointments')
+        .select('patient_id, doctor_id, organisation_id, payment_status, status')
+        .eq('id', appointmentId)
+        .single()
+
+    if (fetchError || !appointment) {
+        return { error: 'Appointment not found' }
+    }
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, organisation_id')
+        .eq('id', user.id)
+        .single()
+
+    const isPatient = appointment.patient_id === user.id
+    const isDoctor = appointment.doctor_id === user.id
+    const isAdmin = profile?.role === 'admin' && profile.organisation_id === appointment.organisation_id
+
+    if (!isPatient && !isDoctor && !isAdmin) {
+        return { error: 'Unauthorized to complete payment for this appointment' }
+    }
+
+    if (appointment.payment_status === 'paid' && appointment.status === 'completed') {
+        return { success: 'Payment already recorded' }
+    }
+
+    const { error: updateError } = await supabase
+        .from('appointments')
+        .update({
+            payment_status: 'paid',
+            status: 'completed',
+            paid_at: new Date().toISOString()
+        })
+        .eq('id', appointmentId)
+
+    if (updateError) {
+        return { error: updateError.message }
+    }
+
+    revalidatePath('/patient')
+    revalidatePath('/doctor')
+    revalidatePath('/admin')
+    return { success: 'Payment completed and appointment marked as complete.' }
 }
