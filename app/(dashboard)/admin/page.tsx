@@ -2,9 +2,9 @@ import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { AppointmentRequestsTable } from '@/app/components/appointment-requests-table'
+import { AppointmentRequestsTable } from '@/components/appointment-requests-table'
 import { getAppointmentRequests } from '@/app/appointments/actions'
-import { DoctorsTable } from '@/app/(dashboard)/admin/doctors-table'
+import { DoctorsTable } from '@/components/doctors-table'
 
 export default async function AdminDashboard() {
   const supabase = await createClient()

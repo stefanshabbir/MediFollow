@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { AppointmentRequestsTable } from '@/app/components/appointment-requests-table'
+import { AppointmentRequestsTable } from '@/components/appointment-requests-table'
 import { toast } from "sonner"
 
 interface DashboardClientProps {
@@ -261,11 +261,9 @@ export function DoctorDashboardClient({ initialAppointments, initialRequests }: 
                                                 </DialogContent>
                                             </Dialog>
                                         )}
-                                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${appointment.status === 'confirmed'
+                                        <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${appointment.status === 'confirmed'
                                             ? 'bg-primary/10 text-primary'
-                                            : appointment.status === 'pending'
-                                                ? 'bg-yellow-100 text-yellow-800'
-                                                : 'bg-gray-100 text-gray-800'
+                                            : 'bg-muted text-muted-foreground'
                                             }`}>
                                             {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                                         </span>

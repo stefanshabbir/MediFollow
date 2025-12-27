@@ -5,6 +5,14 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { sendEmail } from '@/lib/email'
 import { createServiceClient } from '@/utils/supabase/service'
+import {
+    getAppointmentConfirmationEmail,
+    getAppointmentRequestEmail,
+    getAppointmentApprovalEmail,
+    getAppointmentRejectionEmail,
+    getAppointmentCancellationEmail,
+    getAppointmentReminderEmail
+} from '@/lib/email-templates'
 
 export async function createAppointment(formData: FormData) {
     const supabase = await createClient()
@@ -46,8 +54,35 @@ export async function createAppointment(formData: FormData) {
             previous_appointment_id: previousAppointmentId || null
         })
 
+
+
     if (error) {
         return { error: error.message }
+    }
+
+    console.log('[CreateAppointment] User email:', user.email, 'Doctor ID:', doctorId)
+
+    // Send confirmation email to patient
+    if (user.email && doctorProfile) {
+        console.log('[CreateAppointment] Attempting to send email to', user.email)
+        // Fetch doctor's name for email
+        const { data: doctor } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', doctorId)
+            .single()
+
+        await sendEmail({
+            to: user.email,
+            subject: 'Appointment Confirmation - MediFollow',
+            text: `Your appointment with ${doctor?.full_name} on ${appointmentDate} at ${startTime} has been booked.`,
+            html: getAppointmentConfirmationEmail(
+                user.user_metadata?.full_name || 'Patient',
+                doctor?.full_name || 'Doctor',
+                appointmentDate,
+                startTime
+            )
+        })
     }
 
     revalidatePath('/patient')
@@ -200,6 +235,43 @@ export async function cancelAppointment(appointmentId: string) {
 
     if (error) {
         return { error: error.message }
+    }
+
+    // Send cancellation email to doctor
+    // Get appointment details first to know who to email
+    const { data: appointment } = await supabase
+        .from('appointments')
+        .select(`
+            doctor_id,
+            appointment_date,
+            start_time,
+            doctor:doctor_id(full_name),
+            patient:patient_id(full_name)
+        `)
+        .eq('id', appointmentId)
+        .single()
+
+    if (appointment) {
+        // We need to fetch the doctor's email using admin client since we are in patient context
+        const { data: doctorUser } = await supabase.auth.admin.getUserById(appointment.doctor_id)
+
+        if (doctorUser?.user?.email) {
+            const patientName = user.user_metadata?.full_name || 'Patient'
+            // @ts-ignore
+            const doctorName = appointment.doctor?.full_name || 'Doctor'
+
+            await sendEmail({
+                to: doctorUser.user.email,
+                subject: 'Appointment Cancelled - MediFollow',
+                text: `The appointment with ${patientName} on ${appointment.appointment_date} has been cancelled.`,
+                html: getAppointmentCancellationEmail(
+                    doctorName,
+                    patientName,
+                    appointment.appointment_date,
+                    appointment.start_time
+                )
+            })
+        }
     }
 
     revalidatePath('/patient')
@@ -396,7 +468,7 @@ export async function createAppointmentRequest(formData: FormData) {
     // Get doctor's organisation_id
     const { data: doctorProfile } = await supabase
         .from('profiles')
-        .select('organisation_id')
+        .select('organisation_id, full_name')
         .eq('id', doctorId)
         .single()
 
@@ -419,6 +491,22 @@ export async function createAppointmentRequest(formData: FormData) {
 
     if (error) {
         return { error: error.message }
+    }
+
+    // Send request received email
+    if (user.email && doctorProfile) {
+        console.log('[CreateRequest] Sending request email to', user.email)
+        await sendEmail({
+            to: user.email,
+            subject: 'Appointment Request Received - MediFollow',
+            text: `Your appointment request with ${doctorProfile.full_name} for ${appointmentDate} at ${startTime} has been received.`,
+            html: getAppointmentRequestEmail(
+                user.user_metadata?.full_name || 'Patient',
+                doctorProfile.full_name || 'Doctor',
+                appointmentDate,
+                startTime
+            )
+        })
     }
 
     revalidatePath('/patient')
@@ -536,6 +624,33 @@ export async function approveAppointmentRequest(requestId: string) {
         return { error: updateError.message }
     }
 
+    // Send approval email to patient
+    const { data: patientUser, error: patientError } = await supabase.auth.admin.getUserById(request.patient_id)
+    console.log('[ApproveRequest] Patient ID:', request.patient_id, 'Email:', patientUser?.user?.email)
+
+    if (patientUser?.user?.email && !patientError) {
+        console.log('[ApproveRequest] Sending approval email')
+
+        // Get doctor details for email
+        const { data: doctor } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user.id) // Current user is doctor/admin approving
+            .single()
+
+        await sendEmail({
+            to: patientUser.user.email,
+            subject: 'Appointment Approved - MediFollow',
+            text: `Your appointment request with ${doctor?.full_name} for ${request.appointment_date} at ${request.start_time} has been approved.`,
+            html: getAppointmentApprovalEmail(
+                patientUser.user.user_metadata?.full_name || 'Patient',
+                doctor?.full_name || 'Doctor',
+                request.appointment_date,
+                request.start_time
+            )
+        })
+    }
+
     revalidatePath('/doctor')
     revalidatePath('/patient')
     revalidatePath('/admin')
@@ -553,7 +668,7 @@ export async function rejectAppointmentRequest(requestId: string) {
     // Get the request to verify authorization
     const { data: request, error: fetchError } = await supabase
         .from('appointment_requests')
-        .select('doctor_id, organisation_id')
+        .select('doctor_id, organisation_id, patient_id, appointment_date')
         .eq('id', requestId)
         .single()
 
@@ -582,6 +697,29 @@ export async function rejectAppointmentRequest(requestId: string) {
 
     if (error) {
         return { error: error.message }
+    }
+
+    // Send rejection email to patient
+    const { data: patientUser, error: patientError } = await supabase.auth.admin.getUserById(request.patient_id)
+
+    if (patientUser?.user?.email && !patientError) {
+        // Get doctor details for email
+        const { data: doctor } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user.id)
+            .single()
+
+        await sendEmail({
+            to: patientUser.user.email,
+            subject: 'Appointment Request Update - MediFollow',
+            text: `Your appointment request with ${doctor?.full_name} for ${request.appointment_date} has been declined.`,
+            html: getAppointmentRejectionEmail(
+                patientUser.user.user_metadata?.full_name || 'Patient',
+                doctor?.full_name || 'Doctor',
+                request.appointment_date
+            )
+        })
     }
 
     revalidatePath('/doctor')
@@ -634,7 +772,7 @@ export async function sendUpcomingAppointmentReminders(lookaheadHours = 24, wind
         return { error: error.message }
     }
 
-    const upcoming = (data as ReminderAppointment[] | null)?.filter((appt) => {
+    const upcoming = (data as unknown as ReminderAppointment[] | null)?.filter((appt) => {
         const start = toUtcDate(appt.appointment_date, appt.start_time)
         return start >= windowStart && start <= windowEnd
     }) || []
@@ -676,19 +814,46 @@ export async function sendUpcomingAppointmentReminders(lookaheadHours = 24, wind
 
         const sends: Promise<unknown>[] = []
         if (patientEmail) {
+            // Check if patient is array or object and access full_name accordingly
+            // @ts-ignore
+            const patientName = Array.isArray(appt.patient) ? appt.patient[0]?.full_name : appt.patient?.full_name
+            // @ts-ignore
+            const doctorName = Array.isArray(appt.doctor) ? appt.doctor[0]?.full_name : appt.doctor?.full_name
+
             sends.push(sendEmail({
                 to: patientEmail,
                 subject,
-                text: `Hello ${appt.patient?.full_name || 'there'},\n\n${body}\n\n` +
-                    'If you have any questions, please contact your provider.'            }))
+                text: `Hello ${patientName || 'there'},\n\n${body}\n\n` +
+                    'If you have any questions, please contact your provider.',
+                html: getAppointmentReminderEmail(
+                    patientName || 'Patient',
+                    doctorName || 'Doctor',
+                    appt.appointment_date,
+                    appt.start_time,
+                    appt.status
+                )
+            }))
         }
 
         if (doctorEmail) {
+            // @ts-ignore
+            const patientName = Array.isArray(appt.patient) ? appt.patient[0]?.full_name : appt.patient?.full_name
+            // @ts-ignore
+            const doctorName = Array.isArray(appt.doctor) ? appt.doctor[0]?.full_name : appt.doctor?.full_name
+
             sends.push(sendEmail({
                 to: doctorEmail,
                 subject,
-                text: `Hello ${appt.doctor?.full_name || 'Doctor'},\n\n${body}\n\n` +
-                    'Please ensure the time is reserved on your calendar.'            }))
+                text: `Hello ${doctorName || 'Doctor'},\n\n${body}\n\n` +
+                    'Please ensure the time is reserved on your calendar.',
+                html: getAppointmentReminderEmail(
+                    doctorName || 'Doctor',
+                    patientName || 'Patient',
+                    appt.appointment_date,
+                    appt.start_time,
+                    appt.status
+                )
+            }))
         }
 
         try {

@@ -79,13 +79,6 @@ body {
   border-color: hsl(var(--border));
 }
 
-/* Smooth transitions for theme changes */
-*, *::before, *::after {
-  transition-property: background-color, border-color, color, fill, stroke;
-  transition-timing-function: ease;
-  transition-duration: 150ms;
-}
-
 /* Disable transitions during initial load to prevent flash */
 .no-transition * {
   transition: none !important;

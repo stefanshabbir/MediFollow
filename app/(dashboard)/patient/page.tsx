@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 import { getAppointments, getAppointmentRequests } from '@/app/appointments/actions'
-import { AppointmentRequestsTable } from '@/app/components/appointment-requests-table'
-import { CancelAppointmentButton } from '@/app/components/cancel-appointment-button'
+import { AppointmentRequestsTable } from '@/components/appointment-requests-table'
+import { CancelAppointmentButton } from '@/components/cancel-appointment-button'
 import { redirect } from 'next/navigation'
 
 export default async function PatientDashboard() {
@@ -80,7 +80,7 @@ export default async function PatientDashboard() {
             <CardDescription className="text-sm font-medium">Account Status</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">Active</div>
+            <div className="text-2xl font-bold text-foreground">Active</div>
             <p className="text-sm text-muted-foreground mt-1">
               Your account is active
             </p>
@@ -133,9 +133,9 @@ export default async function PatientDashboard() {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${appointment.status === 'confirmed'
+                    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${appointment.status === 'confirmed'
                       ? 'bg-primary/10 text-primary'
-                      : 'bg-yellow-100 text-yellow-800'
+                      : 'bg-muted text-muted-foreground'
                       }`}>
                       {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                     </span>
@@ -183,7 +183,7 @@ export default async function PatientDashboard() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                       {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                     </span>
                     <Button asChild size="sm" variant="outline">

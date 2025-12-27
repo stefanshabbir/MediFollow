@@ -40,8 +40,15 @@ export type SendEmailParams = {
 
 export async function sendEmail(params: SendEmailParams) {
     const transport = getTransport()
-    return transport.sendMail({
-        from: process.env.SMTP_FROM,
-        ...params,
-    })
+    try {
+        const result = await transport.sendMail({
+            from: process.env.SMTP_FROM,
+            ...params,
+        })
+        console.log(`[Email] Sent successfully to ${params.to}. MessageID: ${result.messageId}`)
+        return result
+    } catch (error) {
+        console.error('[Email] Failed to send email:', error)
+        throw error
+    }
 }

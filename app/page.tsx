@@ -34,15 +34,14 @@ export default function Home() {
           <div className="space-y-4">
             <div className="inline-flex items-center gap-2 rounded-full border bg-muted/50 px-4 py-1.5 text-sm text-muted-foreground mb-4">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                <span className="inline-flex rounded-full h-2 w-2 bg-primary"></span>
               </span>
               Now available for healthcare providers
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
               Healthcare management
               <br />
-              <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              <span className="text-primary">
                 made simple
               </span>
             </h1>
@@ -80,38 +79,38 @@ export default function Home() {
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="group rounded-xl border bg-card p-8 shadow-sm hover:shadow-lg hover:border-primary/50 transition-all duration-300">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="group rounded-lg border bg-card p-6">
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="mb-3 text-xl font-semibold text-foreground">Easy Scheduling</h3>
-              <p className="text-muted-foreground">
+              <h3 className="mb-2 text-lg font-semibold text-foreground">Easy Scheduling</h3>
+              <p className="text-sm text-muted-foreground">
                 Book and manage your appointments effortlessly with our intuitive calendar interface.
               </p>
             </div>
 
-            <div className="group rounded-xl border bg-card p-8 shadow-sm hover:shadow-lg hover:border-primary/50 transition-all duration-300">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="group rounded-lg border bg-card p-6">
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
               </div>
-              <h3 className="mb-3 text-xl font-semibold text-foreground">Smart Reminders</h3>
-              <p className="text-muted-foreground">
+              <h3 className="mb-2 text-lg font-semibold text-foreground">Smart Reminders</h3>
+              <p className="text-sm text-muted-foreground">
                 Never miss an appointment with automated reminders and follow-up notifications.
               </p>
             </div>
 
-            <div className="group rounded-xl border bg-card p-8 shadow-sm hover:shadow-lg hover:border-primary/50 transition-all duration-300">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="group rounded-lg border bg-card p-6">
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <svg className="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </div>
-              <h3 className="mb-3 text-xl font-semibold text-foreground">Secure & Private</h3>
-              <p className="text-muted-foreground">
+              <h3 className="mb-2 text-lg font-semibold text-foreground">Secure & Private</h3>
+              <p className="text-sm text-muted-foreground">
                 Your health information is protected with enterprise-grade security and encryption.
               </p>
             </div>
@@ -144,19 +143,19 @@ export default function Home() {
       </div>
 
       {/* CTA Section */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 px-4 py-16 lg:py-20">
+      <div className="bg-primary px-4 py-16 lg:py-20">
         <div className="mx-auto max-w-4xl text-center">
-          <h2 className="text-3xl font-bold text-primary-foreground lg:text-4xl">
+          <h2 className="text-2xl font-bold text-primary-foreground lg:text-3xl">
             Ready to get started?
           </h2>
-          <p className="mt-4 text-lg text-primary-foreground/90">
+          <p className="mt-3 text-primary-foreground/90">
             Join thousands of users managing their healthcare with MediFollow
           </p>
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button asChild size="lg" variant="secondary" className="min-w-[200px] bg-white text-primary hover:bg-white/90">
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button asChild size="lg" className="min-w-[180px] bg-white text-primary hover:bg-white/90">
               <Link href="/register">Create Free Account</Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="min-w-[200px] border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
+            <Button asChild size="lg" variant="outline" className="min-w-[180px] border-white/30 text-primary-foreground hover:bg-white/10">
               <Link href="/login">Sign In</Link>
             </Button>
           </div>
