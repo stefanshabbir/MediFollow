@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
-import { initiateAppointmentCheckout, completeAppointmentPayment } from '@/app/appointments/actions'
+import { initiateAppointmentCheckout } from '@/app/appointments/actions'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -36,44 +36,15 @@ export default async function PatientCheckoutPage({ searchParams }: { searchPara
     redirect('/patient')
   }
 
-  const checkoutResult = await initiateAppointmentCheckout(safeAppointmentId)
-  if (checkoutResult.error) {
-    return (
-      <div className="max-w-3xl mx-auto py-12">
-        <Card>
-          <CardHeader>
-            <CardTitle>Unable to start checkout</CardTitle>
-            <CardDescription>{checkoutResult.error}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline">
-              <a href="/patient">Back to dashboard</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  const checkoutUrl = checkoutResult.checkoutUrl
   const amountCents = appointment.payment_amount_cents ?? 0
 
-  async function markPaid() {
-    'use server'
-    const result = await completeAppointmentPayment(safeAppointmentId)
-    if (result.error) {
-      throw new Error(result.error)
-    }
-    redirect('/patient')
-  }
-
-  async function regenerateCheckout() {
+  async function startCheckout() {
     'use server'
     const result = await initiateAppointmentCheckout(safeAppointmentId, { regenerate: true })
-    if (result.error) {
-      throw new Error(result.error)
+    if (result.error || !result.checkoutUrl) {
+      throw new Error(result.error || 'Unable to start checkout')
     }
-    redirect(`/patient/checkout?appointmentId=${safeAppointmentId}`)
+    redirect(result.checkoutUrl)
   }
 
   return (
@@ -112,23 +83,15 @@ export default async function PatientCheckoutPage({ searchParams }: { searchPara
       <Card>
         <CardHeader>
           <CardTitle>Payment</CardTitle>
-          <CardDescription>Stripe placeholder checkout (LKR)</CardDescription>
+          <CardDescription>Stripe sandbox checkout (LKR)</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">Appointment Fee</p>
             <p className="text-xl font-semibold text-foreground">{formatLkr(amountCents)}</p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button asChild className="flex-1">
-              <a href={checkoutUrl} target="_blank" rel="noreferrer">Open Checkout</a>
-            </Button>
-            <form action={markPaid} className="flex-1">
-              <Button type="submit" variant="secondary" className="w-full">Payment Completed (Simulate)</Button>
-            </form>
-          </div>
-          <form action={regenerateCheckout}>
-            <Button variant="ghost" type="submit">Regenerate checkout link</Button>
+          <form action={startCheckout} className="flex flex-col sm:flex-row gap-3">
+            <Button type="submit" className="flex-1">Pay with Stripe</Button>
           </form>
         </CardContent>
       </Card>

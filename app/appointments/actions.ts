@@ -6,6 +6,8 @@ import { randomUUID } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { sendEmail } from '@/lib/email'
 import { createServiceClient } from '@/utils/supabase/service'
+import { stripe } from '@/lib/stripe'
+import Stripe from 'stripe'
 
 export async function createAppointment(formData: FormData) {
     const supabase = await createClient()
@@ -626,7 +628,7 @@ export async function initiateAppointmentCheckout(appointmentId: string, options
 
     const { data: appointment, error: fetchError } = await supabase
         .from('appointments')
-        .select('*, doctor:doctor_id(fee_cents)')
+        .select('*, doctor:doctor_id(full_name, fee_cents)')
         .eq('id', appointmentId)
         .single()
 
@@ -649,11 +651,44 @@ export async function initiateAppointmentCheckout(appointmentId: string, options
     }
 
     const paymentAmountCents = appointment.payment_amount_cents ?? appointment.doctor?.fee_cents ?? 0
-    const paymentIntentId = options?.regenerate || !appointment.payment_intent_id
-        ? `pi_${randomUUID()}`
-        : appointment.payment_intent_id
+    if (!paymentAmountCents || paymentAmountCents < 0) {
+        return { error: 'Invalid payment amount' }
+    }
 
-    const checkoutUrl = `https://checkout.stripe.com/pay/${paymentIntentId}`
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `http://localhost:${process.env.PORT || 3000}`
+    const description = `Appointment with Dr. ${appointment.doctor?.full_name || ''}`.trim()
+
+    let session: Stripe.Checkout.Session
+    try {
+        session = await stripe.checkout.sessions.create({
+            mode: 'payment',
+            payment_method_types: ['card'],
+            metadata: {
+                appointmentId,
+            },
+            line_items: [
+                {
+                    quantity: 1,
+                    price_data: {
+                        currency: (appointment.currency || 'LKR').toLowerCase(),
+                        unit_amount: paymentAmountCents,
+                        product_data: {
+                            name: description || 'Appointment',
+                        }
+                    }
+                }
+            ],
+            success_url: `${siteUrl}/patient/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${siteUrl}/patient/checkout?appointmentId=${appointmentId}`,
+            customer_email: user.email || undefined
+        })
+    } catch (err: any) {
+        return { error: err.message || 'Failed to start checkout' }
+    }
+
+    const paymentIntentId = typeof session.payment_intent === 'string'
+        ? session.payment_intent
+        : session.payment_intent?.id || session.id
 
     const { error: updateError } = await supabase
         .from('appointments')
@@ -673,7 +708,7 @@ export async function initiateAppointmentCheckout(appointmentId: string, options
     revalidatePath('/patient')
     revalidatePath('/doctor')
     revalidatePath('/admin')
-    return { checkoutUrl }
+    return { checkoutUrl: session.url }
 }
 
 export async function completeAppointmentPayment(appointmentId: string) {
