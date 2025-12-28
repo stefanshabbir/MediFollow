@@ -4,6 +4,8 @@ import { createClient } from '@/utils/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
 import { revalidatePath } from 'next/cache'
+import { sendEmail } from '@/lib/email'
+import { createServiceClient } from '@/utils/supabase/service'
 
 export async function createAppointment(formData: FormData) {
     const supabase = await createClient()
@@ -727,4 +729,127 @@ export async function completeAppointmentPayment(appointmentId: string) {
     revalidatePath('/doctor')
     revalidatePath('/admin')
     return { success: 'Payment completed and appointment marked as complete.' }
+}
+
+type ReminderAppointment = {
+    id: string
+    patient_id: string
+    doctor_id: string
+    appointment_date: string
+    start_time: string
+    status: string
+    reminder_sent_at: string | null
+    patient: { full_name: string | null }[] | null
+    doctor: { full_name: string | null }[] | null
+}
+
+function toUtcDate(date: string, time: string) {
+    return new Date(`${date}T${time}Z`)
+}
+
+export async function sendUpcomingAppointmentReminders(lookaheadHours = 24, windowHours = 1) {
+    const supabase = createServiceClient()
+
+    const windowStart = new Date(Date.now() + lookaheadHours * 60 * 60 * 1000)
+    const windowEnd = new Date(windowStart.getTime() + windowHours * 60 * 60 * 1000)
+
+    const { data, error } = await supabase
+        .from('appointments')
+        .select(`
+            id,
+            patient_id,
+            doctor_id,
+            appointment_date,
+            start_time,
+            status,
+            reminder_sent_at,
+            patient:patient_id(full_name),
+            doctor:doctor_id(full_name)
+        `)
+        .in('status', ['pending', 'confirmed'])
+        .is('reminder_sent_at', null)
+        .gte('appointment_date', windowStart.toISOString().slice(0, 10))
+        .lte('appointment_date', windowEnd.toISOString().slice(0, 10))
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    const upcoming = (data as ReminderAppointment[] | null)?.filter((appt) => {
+        const start = toUtcDate(appt.appointment_date, appt.start_time)
+        return start >= windowStart && start <= windowEnd
+    }) || []
+
+    if (!upcoming.length) {
+        return { success: 'No reminders to send' }
+    }
+
+    const userIds = Array.from(new Set(upcoming.flatMap((appt) => [appt.patient_id, appt.doctor_id])))
+    const emailMap = new Map<string, string>()
+    const emailErrors: string[] = []
+
+    for (const id of userIds) {
+        const { data: user, error: userError } = await supabase.auth.admin.getUserById(id)
+        if (user?.user?.email) {
+            emailMap.set(id, user.user.email)
+        } else if (userError) {
+            emailErrors.push(`Failed to load email for ${id}: ${userError.message}`)
+        }
+    }
+
+    const sent: string[] = []
+    const failed: { id: string; reason: string }[] = []
+
+    for (const appt of upcoming) {
+        const appointmentDate = toUtcDate(appt.appointment_date, appt.start_time)
+        const patientEmail = emailMap.get(appt.patient_id)
+        const doctorEmail = emailMap.get(appt.doctor_id)
+
+        if (!patientEmail && !doctorEmail) {
+            failed.push({ id: appt.id, reason: 'Missing both patient and doctor emails' })
+            continue
+        }
+
+        const subject = 'Appointment Reminder'
+        const readableTime = appointmentDate.toUTCString()
+        const body = `This is a reminder that an appointment is scheduled for ${readableTime}.` +
+            `\nStatus: ${appt.status}`
+
+        const sends: Promise<unknown>[] = []
+        if (patientEmail) {
+            sends.push(sendEmail({
+                to: patientEmail,
+                subject,
+                text: `Hello ${appt.patient?.[0]?.full_name || 'there'},\n\n${body}\n\n` +
+                    'If you have any questions, please contact your provider.'
+            }))
+        }
+
+        if (doctorEmail) {
+            sends.push(sendEmail({
+                to: doctorEmail,
+                subject,
+                text: `Hello ${appt.doctor?.[0]?.full_name || 'Doctor'},\n\n${body}\n\n` +
+                    'Please ensure the time is reserved on your calendar.'
+            }))
+        }
+
+        try {
+            await Promise.all(sends)
+            await supabase
+                .from('appointments')
+                .update({ reminder_sent_at: new Date().toISOString() })
+                .eq('id', appt.id)
+            sent.push(appt.id)
+        } catch (sendError) {
+            failed.push({ id: appt.id, reason: sendError instanceof Error ? sendError.message : 'Unknown error' })
+        }
+    }
+
+    return {
+        success: `Sent ${sent.length} reminder(s)`,
+        sent,
+        failed,
+        emailErrors,
+    }
 }

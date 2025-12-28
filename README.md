@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## MediFollow
 
-## Getting Started
+Next.js 16 App Router app backed by Supabase for auth, profiles, organisations, schedules, and appointments across admin/doctor/patient dashboards.
 
-First, run the development server:
+## Setup
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Core:
+- NEXT_PUBLIC_SUPABASE_URL
+- NEXT_PUBLIC_SUPABASE_ANON_KEY
+- SUPABASE_SERVICE_ROLE_KEY
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+SMTP reminders (Nodemailer):
+- SMTP_HOST (defaults to smtp.gmail.com)
+- SMTP_PORT (defaults to 465)
+- SMTP_USER (Gmail address for SMTP)
+- SMTP_PASS (Gmail App Password)
+- SMTP_FROM (from address)
+- CRON_SECRET (shared secret to call the reminder endpoint)
+- SMTP_REMINDER_DUMMY (optional BCC for reminder copies)
 
-## Learn More
+Gmail defaults are used when SMTP_HOST/SMTP_PORT are omitted. Use a Gmail App Password for SMTP authentication.
 
-To learn more about Next.js, take a look at the following resources:
+## Appointment reminder cron
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Endpoint: POST /api/cron/send-reminders
+- Auth: header Authorization: Bearer $CRON_SECRET
+- Behavior: sends reminders ~24h before start_time to doctor and patient, marks appointments.reminder_sent_at to prevent duplicates.
+- Emails are sent via Gmail SMTP (App Password recommended); reminders BCC the optional SMTP_REMINDER_DUMMY.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+Example cURL:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+curl -X POST "https://your-host/api/cron/send-reminders" \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
