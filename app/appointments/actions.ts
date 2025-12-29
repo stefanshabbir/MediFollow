@@ -651,8 +651,15 @@ export async function initiateAppointmentCheckout(appointmentId: string, options
     }
 
     const paymentAmountCents = appointment.payment_amount_cents ?? appointment.doctor?.fee_cents ?? 0
-    if (!paymentAmountCents || paymentAmountCents < 0) {
-        return { error: 'Invalid payment amount' }
+    console.log('Payment Debug:', {
+        appointmentId,
+        storedAmount: appointment.payment_amount_cents,
+        doctorFee: appointment.doctor?.fee_cents,
+        finalAmount: paymentAmountCents
+    })
+
+    if (!paymentAmountCents || paymentAmountCents <= 0) {
+        return { error: `Invalid payment amount: ${paymentAmountCents / 100}` }
     }
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `http://localhost:${process.env.PORT || 3000}`

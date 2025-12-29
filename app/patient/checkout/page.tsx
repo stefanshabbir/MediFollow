@@ -12,8 +12,8 @@ function formatLkr(cents: number) {
   }).format(cents / 100)
 }
 
-export default async function PatientCheckoutPage({ searchParams }: { searchParams: { appointmentId?: string } }) {
-  const appointmentId = searchParams?.appointmentId
+export default async function PatientCheckoutPage({ searchParams }: { searchParams: Promise<{ appointmentId?: string }> }) {
+  const { appointmentId } = await searchParams
   if (!appointmentId) {
     redirect('/patient')
   }

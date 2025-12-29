@@ -27,27 +27,42 @@ export async function POST(req: Request) {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
     const appointmentId = session.metadata?.appointmentId
+
+    console.log('Webhook: Processing checkout.session.completed', {
+      sessionId: session.id,
+      appointmentId,
+      paymentIntent: session.payment_intent
+    })
+
     const paymentIntentId = typeof session.payment_intent === 'string'
       ? session.payment_intent
       : session.payment_intent?.id || session.id
 
     if (appointmentId) {
       const supabase = createServiceClient()
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('appointments')
         .update({
           payment_status: 'paid',
-          status: 'completed',
+          // status: 'completed', // CHANGED: 'confirmed' is better for upcoming appointments
+          status: 'confirmed',
           paid_at: new Date().toISOString(),
           payment_intent_id: paymentIntentId
         })
         .eq('id', appointmentId)
+        .select()
 
       if (error) {
-        console.error('Failed to mark appointment paid', error)
+        console.error('Webhook: Failed to mark appointment paid', error)
         return NextResponse.json({ error: 'Failed to update appointment' }, { status: 500 })
+      } else {
+        console.log('Webhook: Successfully updated appointment', data)
       }
+    } else {
+      console.warn('Webhook: No appointmentId found in metadata')
     }
+  } else {
+    console.log(`Webhook: Unhandled event type ${event.type}`)
   }
 
   return NextResponse.json({ received: true })
