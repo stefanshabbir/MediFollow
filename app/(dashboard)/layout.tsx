@@ -34,10 +34,12 @@ export default async function DashboardLayout({
         patient: [
             { href: '/patient', label: 'Dashboard' },
             { href: '/patient/book', label: 'Book Appointment' },
+            { href: '/patient/history', label: 'History' },
         ],
         doctor: [
             { href: '/doctor', label: 'Dashboard' },
             { href: '/doctor/schedule', label: 'My Schedule' },
+            { href: '/doctor/patients', label: 'Patients' },
         ],
         admin: [
             { href: '/admin', label: 'Dashboard' },

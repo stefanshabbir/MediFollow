@@ -5,22 +5,30 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-input bg-background hover:bg-muted",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-muted hover:text-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+        // Primary: The nice sky blue from screenshot 3
+        default: "bg-sky-500 text-white shadow-md hover:bg-sky-600 focus-visible:ring-sky-400",
+        // Destructive: Muted rose (not aggressive)
+        destructive: "bg-rose-500 text-white shadow-md hover:bg-rose-600 focus-visible:ring-rose-400",
+        // Outline: Visible borders in both modes
+        outline: "border-2 border-slate-300 bg-white text-slate-700 hover:bg-slate-100 hover:border-sky-400 dark:border-slate-500 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:hover:border-sky-400",
+        // Secondary: Subtle with good contrast
+        secondary: "bg-slate-200 text-slate-800 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600",
+        // Ghost: Minimal but visible
+        ghost: "text-slate-700 hover:bg-slate-200 dark:text-slate-200 dark:hover:bg-slate-700",
+        // Link: Text only
+        link: "text-sky-600 underline-offset-4 hover:underline dark:text-sky-400",
+        // Success: Green for positive actions
+        success: "bg-emerald-500 text-white shadow-md hover:bg-emerald-600 focus-visible:ring-emerald-400",
       },
       size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 rounded-md px-3 text-xs",
-        lg: "h-10 rounded-md px-6",
-        icon: "h-9 w-9",
+        default: "h-11 px-5 py-2",
+        sm: "h-9 rounded-md px-4 text-xs",
+        lg: "h-12 rounded-lg px-8 text-base",
+        icon: "h-11 w-11",
       },
     },
     defaultVariants: {

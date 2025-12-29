@@ -175,7 +175,7 @@ function BookAppointmentForm() {
                                     setSelectedOrg(e.target.value)
                                     setSelectedDoctor("") // Reset doctor when clinic changes
                                 }}
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                                className="flex h-11 w-full rounded-md border-2 border-border bg-background text-foreground px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                 required
                             >
                                 <option value="">Choose a clinic...</option>
@@ -194,7 +194,7 @@ function BookAppointmentForm() {
                                 id="doctor"
                                 value={selectedDoctor}
                                 onChange={(e) => setSelectedDoctor(e.target.value)}
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                                className="flex h-11 w-full rounded-md border-2 border-border bg-background text-foreground px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                 required
                                 disabled={!selectedOrg || (isFollowUp && !!preselectedDoctorId)}
                             >
@@ -265,11 +265,11 @@ function BookAppointmentForm() {
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
                                 placeholder="Any specific concerns or symptoms..."
-                                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                                className="flex min-h-[100px] w-full rounded-md border-2 border-border bg-background text-foreground px-3 py-2 text-base placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                             />
                         </div>
 
-                        <Button type="submit" disabled={isLoading || !selectedSlot} className="w-full">
+                        <Button type="submit" disabled={isLoading || !selectedSlot} className="w-full" size="lg">
                             {isLoading ? "Submitting Request..." : (isFollowUp ? "Schedule Follow-up" : "Submit Appointment Request")}
                         </Button>
                     </form>

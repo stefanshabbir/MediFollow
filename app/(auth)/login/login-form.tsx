@@ -162,7 +162,8 @@ export function LoginForm() {
           <Button
             type="submit"
             disabled={isPending || !formIsValid}
-            className="w-full h-11 text-base font-medium"
+            size="lg"
+            className="w-full text-base font-semibold"
           >
             {isPending ? "Signing in..." : "Sign in"}
           </Button>

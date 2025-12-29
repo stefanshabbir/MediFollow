@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { StatusBadge } from '@/components/ui/badge'
 import { getAppointments, updateAppointmentStatus, scheduleFollowUp } from '@/app/appointments/actions'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -261,12 +262,7 @@ export function DoctorDashboardClient({ initialAppointments, initialRequests }: 
                                                 </DialogContent>
                                             </Dialog>
                                         )}
-                                        <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${appointment.status === 'confirmed'
-                                            ? 'bg-primary/10 text-primary'
-                                            : 'bg-muted text-muted-foreground'
-                                            }`}>
-                                            {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                                        </span>
+                                        <StatusBadge status={appointment.status as any} />
                                     </div>
                                 </div>
                             ))}

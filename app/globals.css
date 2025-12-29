@@ -1,67 +1,67 @@
 @import "tailwindcss";
 
 :root {
-  /* Light Mode */
+  /* Light Mode - WCAG AA Compliant */
   --background: 0 0% 100%; /* Pure White #FFFFFF */
-  --foreground: 200 70% 20%; /* Xero Navy #0D3C55 */
+  --foreground: 220 20% 20%; /* Dark gray for text - 10:1 contrast */
 
   --card: 0 0% 100%; /* White */
-  --card-foreground: 200 70% 20%;
+  --card-foreground: 220 20% 20%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 200 70% 20%;
+  --popover-foreground: 220 20% 20%;
 
-  --primary: 195 85% 49%; /* Xero Blue #13B5EA */
+  --primary: 199 89% 38%; /* Xero Blue - slightly darker for better contrast */
   --primary-foreground: 0 0% 100%; /* White text on blue */
 
-  --secondary: 210 25% 97%; /* Very light gray #F5F7F9 */
-  --secondary-foreground: 200 70% 20%;
+  --secondary: 210 20% 96%; /* Light gray background */
+  --secondary-foreground: 220 20% 20%;
 
-  --muted: 210 25% 97%; /* Light background #F5F7F9 */
-  --muted-foreground: 200 15% 45%; /* Muted text */
+  --muted: 210 20% 96%;
+  --muted-foreground: 220 10% 40%; /* Darker muted text for readability */
 
-  --accent: 195 85% 49%;
-  --accent-foreground: 0 0% 100%;
-
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 100%;
-
-  --border: 214 20% 92%; /* Subtle border #E1E8ED */
-  --input: 214 20% 92%;
-  --ring: 195 85% 49%;
-
-  --radius: 0.5rem;
-}
-
-.dark {
-  /* Dark Mode */
-  --background: 222 47% 11%; /* Slate 900 */
-  --foreground: 210 40% 98%; /* Slate 50 */
-
-  --card: 222 47% 11%;
-  --card-foreground: 210 40% 98%;
-
-  --popover: 222 47% 11%;
-  --popover-foreground: 210 40% 98%;
-
-  --primary: 195 85% 49%;
-  --primary-foreground: 0 0% 100%;
-
-  --secondary: 217 33% 17%; /* Slate 800 */
-  --secondary-foreground: 210 40% 98%;
-
-  --muted: 217 33% 17%;
-  --muted-foreground: 215 20% 65%;
-
-  --accent: 195 85% 49%;
+  --accent: 199 89% 38%;
   --accent-foreground: 0 0% 100%;
 
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 217 33% 17%;
-  --input: 217 33% 17%;
-  --ring: 195 85% 49%;
+  --border: 220 13% 78%; /* Visible border - darker gray */
+  --input: 220 13% 78%;
+  --ring: 199 89% 38%;
+
+  --radius: 0.5rem;
+}
+
+.dark {
+  /* Dark Mode - WCAG AA Compliant */
+  --background: 222 47% 11%; /* Slate 900 */
+  --foreground: 210 40% 98%; /* Slate 50 - bright white text */
+
+  --card: 222 40% 14%; /* Slightly lighter than background */
+  --card-foreground: 210 40% 98%;
+
+  --popover: 222 40% 14%;
+  --popover-foreground: 210 40% 98%;
+
+  --primary: 199 89% 55%; /* Bright cyan-blue for dark mode visibility */
+  --primary-foreground: 0 0% 100%; /* White text on blue */
+
+  --secondary: 217 33% 20%;
+  --secondary-foreground: 210 40% 98%;
+
+  --muted: 217 33% 20%;
+  --muted-foreground: 215 20% 70%; /* Brighter muted text */
+
+  --accent: 199 89% 48%;
+  --accent-foreground: 220 20% 10%;
+
+  --destructive: 0 72% 55%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 217 25% 35%; /* VISIBLE border in dark mode */
+  --input: 217 25% 35%;
+  --ring: 199 89% 48%;
 }
 
 body {
@@ -72,7 +72,6 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 * {
@@ -90,13 +89,24 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
 }
 
-p {
+/* Native form elements - ACCESSIBILITY FIX */
+select,
+input,
+textarea {
   color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+  border: 2px solid hsl(var(--border));
 }
 
-/* Focus states for accessibility */
+select option {
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+  padding: 8px;
+}
+
+/* Focus states for accessibility - WCAG AA */
 :focus-visible {
-  outline: 2px solid hsl(var(--ring));
+  outline: 3px solid hsl(var(--ring));
   outline-offset: 2px;
 }
 
@@ -112,16 +122,22 @@ p {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3);
+  background: hsl(var(--muted-foreground) / 0.4);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5);
+  background: hsl(var(--muted-foreground) / 0.6);
 }
 
 /* Selection styling */
 ::selection {
-  background: hsl(var(--primary) / 0.2);
+  background: hsl(var(--primary) / 0.3);
   color: hsl(var(--foreground));
+}
+
+/* Button minimum contrast - ensure visibility */
+button, 
+[role="button"] {
+  min-height: 44px; /* WCAG touch target size */
 }

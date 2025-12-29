@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { StatusBadge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { getAppointments, getAppointmentRequests } from '@/app/appointments/actions'
 import { AppointmentRequestsTable } from '@/components/appointment-requests-table'
@@ -133,12 +134,7 @@ export default async function PatientDashboard() {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${appointment.status === 'confirmed'
-                      ? 'bg-primary/10 text-primary'
-                      : 'bg-muted text-muted-foreground'
-                      }`}>
-                      {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                    </span>
+                    <StatusBadge status={appointment.status as any} />
                     <CancelAppointmentButton id={appointment.id} />
                   </div>
                 </div>
@@ -183,7 +179,7 @@ export default async function PatientDashboard() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                    <span className="inline-flex items-center rounded-md bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 px-2.5 py-1 text-xs font-semibold">
                       {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                     </span>
                     <Button asChild size="sm" variant="outline">

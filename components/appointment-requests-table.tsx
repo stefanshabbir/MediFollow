@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { approveAppointmentRequest, rejectAppointmentRequest } from "@/app/appointments/actions"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/ui/badge"
 import { format } from "date-fns"
 
 interface AppointmentRequest {
@@ -105,12 +105,7 @@ export function AppointmentRequestsTable({ initialRequests, role }: Props) {
                                 </td>
                             )}
                             <td className="px-6 py-4">
-                                <Badge variant={
-                                    request.status === 'approved' ? 'default' :
-                                        request.status === 'rejected' ? 'destructive' : 'secondary'
-                                }>
-                                    {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                                </Badge>
+                                <StatusBadge status={request.status} />
                             </td>
                             <td className="px-6 py-4 text-sm text-muted-foreground max-w-[200px] truncate" title={request.notes}>
                                 {request.notes || '-'}
@@ -121,15 +116,15 @@ export function AppointmentRequestsTable({ initialRequests, role }: Props) {
                                         <>
                                             <Button
                                                 size="sm"
-                                                variant="outline"
+                                                variant="destructive"
                                                 disabled={loadingId === request.id}
                                                 onClick={() => handleAction(request.id, 'reject')}
-                                                className="text-destructive hover:text-destructive"
                                             >
                                                 Reject
                                             </Button>
                                             <Button
                                                 size="sm"
+                                                variant="success"
                                                 disabled={loadingId === request.id}
                                                 onClick={() => handleAction(request.id, 'approve')}
                                             >
