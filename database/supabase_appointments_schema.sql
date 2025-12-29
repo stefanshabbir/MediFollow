@@ -7,7 +7,12 @@ create table public.appointments (
   appointment_date date not null,
   start_time time not null,
   end_time time not null,
-  status text not null default 'pending' check (status in ('pending', 'confirmed', 'cancelled', 'completed')),
+  status text not null default 'pending' check (status in ('pending', 'confirmed', 'cancelled', 'awaiting_payment', 'completed')),
+  payment_status text not null default 'pending' check (payment_status in ('pending', 'paid', 'failed')),
+  payment_amount_cents integer not null default 0,
+  currency text not null default 'LKR',
+  payment_intent_id text,
+  paid_at timestamp with time zone,
   notes text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
@@ -73,6 +78,18 @@ using (
 )
 with check (
   auth.uid() = patient_id and status in ('pending', 'cancelled')
+);
+
+-- Patients can mark awaiting payment appointments as paid
+create policy "Patients can complete payment"
+on public.appointments
+for update
+to authenticated
+using (
+  auth.uid() = patient_id and status = 'awaiting_payment'
+)
+with check (
+  auth.uid() = patient_id and status in ('awaiting_payment', 'completed')
 );
 
 -- Doctors can update appointments assigned to them

@@ -27,6 +27,8 @@ export default async function PatientDashboard() {
 
   console.log('server: appointmentRequests', appointmentRequests)
 
+
+
   const upcomingAppointments = appointments?.filter((apt: any) =>
     new Date(apt.appointment_date) >= new Date() && apt.status !== 'cancelled'
   ) || []

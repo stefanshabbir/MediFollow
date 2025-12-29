@@ -4,6 +4,7 @@ create table public.profiles (
   created_at timestamp with time zone not null default now(),
   organisation_id uuid null,
   full_name text null,
+  fee_cents integer not null default 0,
   constraint profiles_pkey primary key (id),
   constraint profiles_organisation_id_fkey foreign KEY (organisation_id) references organisations (id)
 ) TABLESPACE pg_default;
@@ -46,6 +47,11 @@ create table public.appointments (
   start_time time without time zone not null,
   end_time time without time zone not null,
   status text not null default 'pending'::text,
+  payment_status text not null default 'pending'::text,
+  payment_amount_cents integer not null default 0,
+  currency text not null default 'LKR'::text,
+  payment_intent_id text null,
+  paid_at timestamp with time zone null,
   notes text null,
   created_at timestamp with time zone not null default timezone ('utc'::text, now()),
   updated_at timestamp with time zone not null default timezone ('utc'::text, now()),
@@ -62,6 +68,7 @@ create table public.appointments (
           'pending'::text,
           'confirmed'::text,
           'cancelled'::text,
+          'awaiting_payment'::text,
           'completed'::text
         ]
       )

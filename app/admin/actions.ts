@@ -119,3 +119,45 @@ export async function deleteDoctor(doctorId: string) {
     revalidatePath('/admin')
     return { success: 'Doctor deleted successfully' }
 }
+
+export async function updateDoctorFee(doctorId: string, feeCents: number) {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+        return { error: 'Unauthorized' }
+    }
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, organisation_id')
+        .eq('id', user.id)
+        .single()
+
+    if (!profile || profile.role !== 'admin' || !profile.organisation_id) {
+        return { error: 'Unauthorized: Only Organisation Admins can edit fees.' }
+    }
+
+    const supabaseAdmin = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
+        }
+    )
+
+    const { error } = await supabaseAdmin
+        .from('profiles')
+        .update({ fee_cents: Math.max(0, Math.round(feeCents)) })
+        .eq('id', doctorId)
+
+    if (error) {
+        return { error: `Update failed: ${error.message}` }
+    }
+
+    revalidatePath('/admin')
+    return { success: 'Fee updated' }
+}
