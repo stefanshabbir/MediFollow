@@ -687,7 +687,8 @@ export async function initiateAppointmentCheckout(appointmentId: string, options
             ],
             success_url: `${siteUrl}/patient/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${siteUrl}/patient/checkout?appointmentId=${appointmentId}`,
-            customer_email: user.email || undefined
+            customer_email: user.email || undefined,
+            locale: 'en'
         })
     } catch (err: any) {
         return { error: err.message || 'Failed to start checkout' }
