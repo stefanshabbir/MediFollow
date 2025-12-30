@@ -9,16 +9,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Primary: The nice sky blue from screenshot 3
+        // Primary: Vibrant sky blue with white text (matches "Request Appointment" style)
         default: "bg-sky-500 text-white shadow-md hover:bg-sky-600 focus-visible:ring-sky-400",
-        // Destructive: Muted rose (not aggressive)
+        // Destructive: Soft rose for negative actions
         destructive: "bg-rose-500 text-white shadow-md hover:bg-rose-600 focus-visible:ring-rose-400",
-        // Outline: Visible borders in both modes
-        outline: "border-2 border-slate-300 bg-white text-slate-700 hover:bg-slate-100 hover:border-sky-400 dark:border-slate-500 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 dark:hover:border-sky-400",
-        // Secondary: Subtle with good contrast
-        secondary: "bg-slate-200 text-slate-800 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600",
+        // Outline: Light with visible border in both modes
+        outline: "border-2 border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-sky-500 dark:border-slate-400 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800 dark:hover:border-sky-400",
+        // Secondary: Uses the vibrant sky blue style (same as default for consistency)
+        secondary: "bg-sky-500 text-white shadow-md hover:bg-sky-600 focus-visible:ring-sky-400",
         // Ghost: Minimal but visible
-        ghost: "text-slate-700 hover:bg-slate-200 dark:text-slate-200 dark:hover:bg-slate-700",
+        ghost: "text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800",
         // Link: Text only
         link: "text-sky-600 underline-offset-4 hover:underline dark:text-sky-400",
         // Success: Green for positive actions

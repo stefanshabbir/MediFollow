@@ -91,6 +91,21 @@ export default async function AdminDashboard() {
         </CardContent>
       </Card>
 
+      {/* Patients Table */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="space-y-1.5">
+            <CardTitle>Patients</CardTitle>
+            <CardDescription>
+              Browse patients and manage medical records
+            </CardDescription>
+          </div>
+          <Button asChild>
+            <Link href="/admin/patients">View All Patients</Link>
+          </Button>
+        </CardHeader>
+      </Card>
+
       {/* Doctors Table */}
       <Card>
         <CardHeader>

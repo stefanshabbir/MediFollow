@@ -151,7 +151,7 @@ function BookAppointmentForm() {
                             : "Submit an appointment request to a doctor"}
                     </p>
                 </div>
-                <Button asChild variant="outline">
+                <Button asChild>
                     <Link href="/patient">Back to Dashboard</Link>
                 </Button>
             </div>

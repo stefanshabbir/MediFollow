@@ -76,7 +76,7 @@ export default function DoctorSchedulePage() {
                         Set your working hours and availability
                     </p>
                 </div>
-                <Button asChild variant="outline">
+                <Button asChild>
                     <Link href="/doctor">Back to Dashboard</Link>
                 </Button>
             </div>

@@ -19,23 +19,55 @@ export default function SetPasswordPage() {
     useEffect(() => {
         const supabase = createClient()
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            console.log("Auth event:", event, session)
-            if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED' || session) {
-                setIsCheckingSession(false)
-            }
-        })
+        const handleAuth = async () => {
+            // 1. Check if we have hash parameters (Invite/Reset link)
+            const hash = window.location.hash
+            if (hash && hash.includes("access_token")) {
+                try {
+                    // Extract tokens from hash keys
+                    const params = new URLSearchParams(hash.substring(1)) // remove the #
+                    const accessToken = params.get("access_token")
+                    const refreshToken = params.get("refresh_token")
 
-        const checkSession = async () => {
+                    if (accessToken && refreshToken) {
+                        const { error } = await supabase.auth.setSession({
+                            access_token: accessToken,
+                            refresh_token: refreshToken,
+                        })
+
+                        if (error) {
+                            console.error("Error setting session from hash:", error)
+                            setError("Invalid or expired invitation link.")
+                        } else {
+                            // Successfully set session
+                            setIsCheckingSession(false)
+                            // Clear hash to clean up URL
+                            window.history.replaceState(null, "", window.location.pathname)
+                            return
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error parsing hash:", e)
+                }
+            }
+
+            // 2. Fallback: Check existing session or listen for changes
             const { data: { session } } = await supabase.auth.getSession()
             if (session) {
                 setIsCheckingSession(false)
+                return
             }
+
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY' || session) {
+                    setIsCheckingSession(false)
+                }
+            })
+
+            return () => subscription.unsubscribe()
         }
 
-        checkSession()
-
-        return () => subscription.unsubscribe()
+        handleAuth()
     }, [])
 
     if (isCheckingSession) {
