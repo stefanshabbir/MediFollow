@@ -1,12 +1,11 @@
 import { createClient } from '@/utils/supabase/server'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { StatusBadge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { getAppointments, getAppointmentRequests } from '@/app/appointments/actions'
 import { AppointmentRequestsTable } from '@/components/appointment-requests-table'
-import { CancelAppointmentButton } from '@/components/cancel-appointment-button'
 import { redirect } from 'next/navigation'
+import { PatientAppointmentList } from '@/components/patient-appointment-list'
 
 export default async function PatientDashboard() {
   const supabase = await createClient()
@@ -113,45 +112,7 @@ export default async function PatientDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {upcomingAppointments.length > 0 ? (
-            <div className="space-y-4">
-              {upcomingAppointments.map((appointment: any) => (
-                <div key={appointment.id} className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
-                  <div className="space-y-1">
-                    <p className="font-semibold text-foreground">
-                      Dr. {appointment.doctor?.full_name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(appointment.appointment_date).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })} at {appointment.start_time.substring(0, 5)}
-                    </p>
-                    {appointment.notes && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Note: {appointment.notes}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <StatusBadge status={appointment.status as any} />
-                    <CancelAppointmentButton id={appointment.id} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-lg border border-dashed p-12 text-center">
-              <p className="text-sm text-muted-foreground mb-4">
-                You have no upcoming appointments. Book your first appointment to get started.
-              </p>
-              <Button asChild variant="outline">
-                <Link href="/patient/book">Book Appointment</Link>
-              </Button>
-            </div>
-          )}
+          <PatientAppointmentList appointments={upcomingAppointments} type="upcoming" />
         </CardContent>
       </Card>
 
@@ -165,34 +126,7 @@ export default async function PatientDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {pastAppointments.slice(0, 5).map((appointment: any) => (
-                <div key={appointment.id} className="flex items-center justify-between p-4 rounded-lg border bg-muted/20">
-                  <div className="space-y-1">
-                    <p className="font-semibold text-foreground">
-                      Dr. {appointment.doctor?.full_name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(appointment.appointment_date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center rounded-md bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 px-2.5 py-1 text-xs font-semibold">
-                      {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                    </span>
-                    <Button asChild size="sm" variant="outline">
-                      <Link href={`/patient/book?doctorId=${appointment.doctor_id}&previousAppointmentId=${appointment.id}`}>
-                        Book Follow-up
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <PatientAppointmentList appointments={pastAppointments.slice(0, 5)} type="past" />
           </CardContent>
         </Card>
       )}

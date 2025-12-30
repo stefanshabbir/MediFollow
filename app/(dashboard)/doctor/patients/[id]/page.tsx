@@ -2,6 +2,7 @@ import { getPatientProfile, getPatientRecords } from '@/app/actions/records'
 import { getAppointments } from '@/app/appointments/actions'
 import { MedicalRecordUpload } from '@/components/medical-record-upload'
 import { MedicalRecordsList } from '@/components/medical-records-list'
+import { DoctorAppointmentList } from '@/components/doctor-appointment-list'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/utils/supabase/server'
@@ -80,32 +81,7 @@ export default async function PatientDetailsPage({ params }: { params: Promise<{
                         <h2 className="text-xl font-semibold tracking-tight">Appointment History</h2>
                         <Card>
                             <CardContent className="p-0">
-                                {patientAppointments.length === 0 ? (
-                                    <div className="p-6 text-center text-muted-foreground">
-                                        No appointment history found.
-                                    </div>
-                                ) : (
-                                    <div className="divide-y">
-                                        {patientAppointments.map((apt: any) => (
-                                            <div key={apt.id} className="flex items-center justify-between p-4 hover:bg-muted/50">
-                                                <div className="space-y-1">
-                                                    <p className="font-medium">{apt.appointment_date}</p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {apt.start_time.slice(0, 5)} - {apt.end_time.slice(0, 5)}
-                                                    </p>
-                                                    {apt.notes && <p className="text-xs text-muted-foreground line-clamp-1">{apt.notes}</p>}
-                                                </div>
-                                                <div className={`px-2 py-1 rounded-full text-xs capitalize ${apt.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                                                        apt.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                                                            apt.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                                                                'bg-gray-100 text-gray-700'
-                                                    }`}>
-                                                    {apt.status}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                <DoctorAppointmentList appointments={patientAppointments} />
                             </CardContent>
                         </Card>
                     </div>
