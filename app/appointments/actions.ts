@@ -920,8 +920,8 @@ type ReminderAppointment = {
     start_time: string
     status: string
     reminder_sent_at: string | null
-    patient: { full_name: string | null }[] | null
-    doctor: { full_name: string | null }[] | null
+    patient: { full_name: string | null }[] | { full_name: string | null } | null
+    doctor: { full_name: string | null }[] | { full_name: string | null } | null
 }
 
 function toUtcDate(date: string, time: string) {
@@ -956,6 +956,7 @@ export async function sendUpcomingAppointmentReminders(lookaheadHours = 24, wind
         return { error: error.message }
     }
 
+    // Cast to unknown to safely handle Supabase return types
     const upcoming = (data as unknown as ReminderAppointment[] | null)?.filter((appt) => {
         const start = toUtcDate(appt.appointment_date, appt.start_time)
         return start >= windowStart && start <= windowEnd
