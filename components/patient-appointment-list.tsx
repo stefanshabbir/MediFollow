@@ -4,7 +4,7 @@ import { StatusBadge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { CancelAppointmentButton } from '@/components/cancel-appointment-button'
-import { ChevronRight, CornerDownRight } from 'lucide-react'
+import { ChevronRight, CornerDownRight, CreditCard } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface PatientAppointmentListProps {
@@ -83,6 +83,15 @@ function AppointmentNodeItem({ node, type, depth = 0 }: { node: AppointmentNode,
                         </Button>
                     ) : (
                         <CancelAppointmentButton id={node.id} />
+                    )}
+
+                    {!isPast && (node.status === 'confirmed' || node.status === 'awaiting_payment') && node.payment_status !== 'paid' && (
+                        <Button asChild size="sm" className="gap-2">
+                            <Link href={`/patient/checkout?appointmentId=${node.id}`}>
+                                <CreditCard className="h-4 w-4" />
+                                Pay Now
+                            </Link>
+                        </Button>
                     )}
                 </div>
             </div>
