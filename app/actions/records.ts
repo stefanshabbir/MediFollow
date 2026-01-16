@@ -114,17 +114,181 @@ export async function getPatientRecords(patientId: string) {
 
     // Generate Signed URLs for the records using service client
     const recordsWithUrls = await Promise.all(records.map(async (record) => {
-        const { data } = await supabaseService.storage
-            .from('medical-records')
-            .createSignedUrl(record.file_url, 3600) // Valid for 1 hour
+        let signedUrl = null
+        if (record.file_url) {
+            const { data } = await supabaseService.storage
+                .from('medical-records')
+                .createSignedUrl(record.file_url, 3600) // Valid for 1 hour
+            signedUrl = data?.signedUrl
+        }
 
         return {
             ...record,
-            signedUrl: data?.signedUrl
+            signedUrl
         }
     }))
 
     return { data: recordsWithUrls }
+}
+
+export async function saveNoteDraft(recordId: string | null, content: string, patientId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    // Check Role
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+    if (profile?.role !== 'doctor') {
+        return { error: 'Unauthorized: Only doctors can save clinical notes' }
+    }
+
+    const supabaseService = createServiceClient()
+
+    if (recordId) {
+        // Update existing draft
+        // Verify ownership and status
+        const { data: existing } = await supabaseService
+            .from('medical_records')
+            .select('status, doctor_id')
+            .eq('id', recordId)
+            .single()
+
+        if (!existing) return { error: 'Record not found' }
+        if (existing.doctor_id !== user.id) return { error: 'Unauthorized' }
+        if (existing.status === 'finalized') return { error: 'Cannot edit finalized note' }
+
+        const { error } = await supabaseService
+            .from('medical_records')
+            .update({ content, updated_at: new Date().toISOString() })
+            .eq('id', recordId)
+
+        if (error) return { error: error.message }
+        return { success: true, recordId }
+    } else {
+        // Create new draft
+        const { data, error } = await supabaseService
+            .from('medical_records')
+            .insert({
+                patient_id: patientId,
+                doctor_id: user.id,
+                content,
+                status: 'draft',
+                // file_url and file_name are null
+            })
+            .select('id')
+            .single()
+
+        if (error) return { error: error.message }
+        return { success: true, recordId: data.id }
+    }
+}
+
+export async function finalizeNote(recordId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    const supabaseService = createServiceClient()
+
+    // 1. Get current content
+    const { data: record } = await supabaseService
+        .from('medical_records')
+        .select('content, doctor_id, status')
+        .eq('id', recordId)
+        .single()
+
+    if (!record) return { error: 'Record not found' }
+    if (record.doctor_id !== user.id) return { error: 'Unauthorized' }
+    if (record.status === 'finalized') return { error: 'Already finalized' }
+
+    // 2. Archive version
+    const { error: versionError } = await supabaseService
+        .from('medical_record_versions')
+        .insert({
+            medical_record_id: recordId,
+            content: record.content,
+            created_by: user.id
+        })
+
+    if (versionError) return { error: 'Failed to save version: ' + versionError.message }
+
+    // 3. Update status
+    const { error: updateError } = await supabaseService
+        .from('medical_records')
+        .update({ status: 'finalized', updated_at: new Date().toISOString() })
+        .eq('id', recordId)
+
+    if (updateError) return { error: updateError.message }
+
+    revalidatePath('/doctor/patients') // Revalidate liberally for now
+    return { success: true }
+}
+
+export async function getNoteHistory(recordId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    const supabaseService = createServiceClient()
+
+    // Verify access (doctor who created it)
+    const { data: record } = await supabaseService
+        .from('medical_records')
+        .select('doctor_id')
+        .eq('id', recordId)
+        .single()
+
+    if (!record || record.doctor_id !== user.id) return { error: 'Unauthorized' }
+
+    const { data: versions, error } = await supabaseService
+        .from('medical_record_versions')
+        .select('*')
+        .eq('medical_record_id', recordId)
+        .order('created_at', { ascending: false })
+
+    if (error) return { error: error.message }
+    return { data: versions }
+}
+
+export async function restoreNoteVersion(recordId: string, versionId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    const supabaseService = createServiceClient()
+
+    // Verify ownership
+    const { data: record } = await supabaseService
+        .from('medical_records')
+        .select('status, doctor_id')
+        .eq('id', recordId)
+        .single()
+
+    if (!record || record.doctor_id !== user.id) return { error: 'Unauthorized' }
+    if (record.status === 'finalized') return { error: 'Cannot restore to a finalized note' }
+
+    // Get version content
+    const { data: version } = await supabaseService
+        .from('medical_record_versions')
+        .select('content')
+        .eq('id', versionId)
+        .single()
+
+    if (!version) return { error: 'Version not found' }
+
+    // Update main record
+    const { error } = await supabaseService
+        .from('medical_records')
+        .update({ content: version.content, updated_at: new Date().toISOString() })
+        .eq('id', recordId)
+
+    if (error) return { error: error.message }
+    return { success: true }
 }
 
 export async function getDoctorPatients() {
