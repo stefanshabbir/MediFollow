@@ -10,6 +10,8 @@ import { ArrowLeft, User } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+import { ConsultationNotes } from '@/components/consultation-notes'
+
 export default async function PatientDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
     const { data: profile, error: profileError } = await getPatientProfile(id)
@@ -21,12 +23,26 @@ export default async function PatientDetailsPage({ params }: { params: Promise<{
     // Fetch Records
     const { data: records, error: recordsError } = await getPatientRecords(id)
 
+    // Find active draft for this doctor (using current user session implicitly via what getPatientRecords returns, 
+    // but getPatientRecords returns ALL records for the patient. 
+    // We need to filter for one created by the current doctor with status 'draft'.
+
+    // We need the current doctor's ID to filter safely.
+    // Since this is a server component, we can get the session.
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // Check for existing draft
+    const activeDraft = records?.find(r =>
+        r.status === 'draft' &&
+        r.doctor?.full_name && // records returns doctor name, but we check matching doctor_id if available? 
+        // Wait, getPatientRecords joined doctor profile. It didn't return doctor_id in the top level text maybe?
+        // Let's check records.ts getPatientRecords select: "*, doctor:profiles!doctor_id(full_name)".
+        // It returns '*' from medical_records, so doctor_id IS present.
+        r.doctor_id === user?.id
+    ) || null
+
     // Fetch Appointment History
-    // We need to fetch ALL appointments and filter for this patient and this doctor
-    // Optimized: In a real app we'd have a specific query. For now we reuse getAppointments('doctor') which filters by current doctor, then filter by patient.
-    // Actually getAppointments('doctor') is per current user.
-    // Wait, getAppointments('doctor') loads appointments where doctor_id = me.
-    // So we can just filter that list by patient_id = id.
     const { data: allAppointments, error: appointmentsError } = await getAppointments('doctor')
 
     const patientAppointments = Array.isArray(allAppointments)
@@ -46,6 +62,15 @@ export default async function PatientDetailsPage({ params }: { params: Promise<{
                     <p className="text-muted-foreground">Patient Details</p>
                 </div>
             </div>
+
+            <ConsultationNotes
+                patientId={id}
+                initialData={activeDraft ? {
+                    id: activeDraft.id,
+                    content: activeDraft.content,
+                    status: activeDraft.status
+                } : null}
+            />
 
             <div className="grid gap-6 lg:grid-cols-3">
                 {/* Left Column: Upload & Profile */}
@@ -73,7 +98,7 @@ export default async function PatientDetailsPage({ params }: { params: Promise<{
                     {/* Medical Records List */}
                     <div className="space-y-2">
                         <h2 className="text-xl font-semibold tracking-tight">Medical Records</h2>
-                        <MedicalRecordsList records={records || []} />
+                        <MedicalRecordsList records={records?.filter(r => r.status === 'finalized') || []} />
                     </div>
 
                     {/* Appointment History */}
