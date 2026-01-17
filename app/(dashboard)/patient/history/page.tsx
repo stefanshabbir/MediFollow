@@ -14,7 +14,8 @@ export default async function PatientHistoryPage() {
     }
 
     // Fetch Records
-    const { data: records, error: recordsError } = await getPatientRecords(user.id)
+    const { data: allRecords, error: recordsError } = await getPatientRecords(user.id)
+    const records = allRecords?.filter((r: any) => r.status === 'finalized') || []
 
     // Fetch Appointment History
     const { data: appointments, error: appointmentsError } = await getAppointments('patient')
@@ -70,8 +71,8 @@ export default async function PatientHistoryPage() {
                                             <div className="flex items-center gap-2">
                                                 <h3 className="font-semibold">{apt.doctor?.full_name || 'Doctor'}</h3>
                                                 <span className={`text-xs px-2 py-0.5 rounded-full ${apt.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                                                        apt.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                                                            'bg-gray-100 text-gray-700'
+                                                    apt.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                                        'bg-gray-100 text-gray-700'
                                                     }`}>
                                                     {apt.status}
                                                 </span>
