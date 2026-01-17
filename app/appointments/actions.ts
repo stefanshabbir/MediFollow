@@ -383,10 +383,6 @@ export async function getDoctors(options?: {
         query = query.lte('fee_cents', options.maxFee)
     }
 
-    // Availability Filter
-    // We filter in memory for "availableOnly" because we need to check if ANY schedule is true.
-    // The query returns doctor_schedules array.
-
     const { data, error } = await query
 
     if (error) {
@@ -396,14 +392,22 @@ export async function getDoctors(options?: {
 
     let doctors = data || []
 
-    // if (options?.availableOnly) {
-    //     doctors = doctors.filter((doc: any) =>
-    //         doc.doctor_schedules && doc.doctor_schedules.some((s: any) => s.is_available)
-    //     )
-    // }
+    // Availability Filter - Fetch separately to avoid missing relationship error
+    if (options?.availableOnly && doctors.length > 0) {
+        const doctorIds = doctors.map((d: any) => d.id)
+
+        const { data: availableSchedules } = await supabaseAdmin
+            .from('doctor_schedules')
+            .select('doctor_id')
+            .in('doctor_id', doctorIds)
+            .eq('is_available', true)
+
+        const availableDoctorIds = new Set(availableSchedules?.map((s: any) => s.doctor_id))
+
+        doctors = doctors.filter((doc: any) => availableDoctorIds.has(doc.id))
+    }
 
     // Add 'has_records' flag
-    // Determine which doctors the current user has visited
     if (user) {
         const { data: interactionData } = await supabaseAdmin
             .from('appointments')

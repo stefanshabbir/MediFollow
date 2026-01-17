@@ -34,7 +34,7 @@ function BookAppointmentForm() {
     const [searchQuery, setSearchQuery] = useState("")
     const debouncedSearch = useDebounce(searchQuery, 300)
     const [selectedFilterOrg, setSelectedFilterOrg] = useState<string>("all")
-    const [feeRange, setFeeRange] = useState([0, 20000]) // Default range in cents (0 - 20000)
+    const [feeRange, setFeeRange] = useState([0, 1000000]) // Default to max (no filter)
     const debouncedFeeRange = useDebounce(feeRange, 500) // Debounce slider for API calls if we were doing server filtering on slide. 
     // Wait, getDoctors logic is server side. We should fetch doctors based on filters OR fetch all and filter client side?
     // Requirement says "Server-Side Filtering".
@@ -76,8 +76,9 @@ function BookAppointmentForm() {
                 const filters: any = {
                     search: debouncedSearch,
                     organisationId: selectedFilterOrg !== "all" ? selectedFilterOrg : undefined,
-                    minFee: debouncedFeeRange[0], // Is this array? Yes, Slider value is number[]
-                    maxFee: debouncedFeeRange[1],
+                    minFee: debouncedFeeRange[0],
+                    // If max is 1,000,000, we treat it as "no limit"
+                    maxFee: debouncedFeeRange[1] === 1000000 ? undefined : debouncedFeeRange[1],
                     availableOnly: availableOnly
                 }
 
@@ -216,24 +217,14 @@ function BookAppointmentForm() {
                         <div className="space-y-2">
                             <Label>Consultation Fee (LKR)</Label>
                             <Slider
-                                value={[feeRange[0]]} // Slider expects array. 
-                                // Wait, simple slider? Shadcn slider supports range (2 values) or single.
-                                // If I pass [min, max], it's a range slider.
-                                // Let's simplify to max fee? Or range?
-                                // "Filter by the fee_cents column".
-                                // Typically "Max Price" is what uses want.
-                                // But let's support min/max.
-                                // However, passing [val] implies single thumb. 
-                                // Updating feeRange state which is [0, 20000].
-                                // If I want just max fee:
+                                value={[feeRange[1]]} // Show max thumb
                                 min={0}
-                                max={20000}
-                                step={500}
-                                onValueChange={(val) => setFeeRange([feeRange[0], val[0]])} // Only updating max?
-                            // Let's implement MAX FEE filter for simplicity and UX.
+                                max={1000000} // 10,000 LKR
+                                step={10000} // 100 LKR steps
+                                onValueChange={(val) => setFeeRange([feeRange[0], val[0]])}
                             />
                             <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Max: {(feeRange[1] / 100).toFixed(2)}</span>
+                                <span>Max: {feeRange[1] === 1000000 ? "Any Price" : (feeRange[1] / 100).toFixed(2)}</span>
                             </div>
                         </div>
 
