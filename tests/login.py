@@ -35,6 +35,7 @@ def get_login(email:str, password:str) -> webdriver.Edge | webdriver.Chrome:
     driver.find_element(By.CSS_SELECTOR, 'button[type="submit"]').click()
 
     WebDriverWait(driver, 15).until(EC.title_is("MediFollow - Healthcare Management Platform"))
-    print(f"Login successful as user, {email}! Page title is:", driver.title)
+    print("\n" + "="*10)
+    print(f"Login successful as user, {email}! Page title is: {driver.title}\n")
 
     return driver
