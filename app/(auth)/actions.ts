@@ -1,9 +1,10 @@
 'use server'
 
+import { createClient } from '@/utils/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-
-import { createClient } from '@/utils/supabase/server'
+import { z } from 'zod'
 
 export async function login(formData: FormData) {
     const supabase = await createClient()
@@ -134,6 +135,91 @@ export async function signupOrg(formData: FormData) {
 export async function signout() {
     const supabase = await createClient()
     await supabase.auth.signOut()
-    revalidatePath('/', 'layout')
+    revalidatePath('/')
     redirect('/login')
+}
+
+// --- PM-005, PM-006: Change Email ---
+export async function updateEmail(newEmail: string) {
+    const supabase = await createClient()
+
+    // 1. Validate Email (Zod or basic regex)
+    const emailSchema = z.string().email("Invalid email format")
+    const result = emailSchema.safeParse(newEmail)
+    if (!result.success) {
+        return { error: result.error.errors[0].message }
+    }
+
+    // 2. Auth Update (Supabase handles verification flow)
+    const { data, error } = await supabase.auth.updateUser({ email: newEmail })
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    return {
+        success: "Confirmation email sent. Please check your inbox to confirm the change.",
+        pending: true
+    }
+}
+
+// --- PM-007, PM-008: Change Password ---
+export async function changePassword(currentPassword: string, newPassword: string) {
+    const supabase = await createClient()
+
+    // 1. Password Strength Validation (PM-008 - basic check here, Zod in UI)
+    if (newPassword.length < 8) {
+        return { error: "Password must be at least 8 characters long" }
+    }
+
+    // 2. Update Password 
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || !user.email) return { error: "Unauthorized" }
+
+    // Re-verify current password
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword
+    })
+
+    if (signInError) {
+        return { error: "Incorrect current password" }
+    }
+
+    // Set new password
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
+
+    if (updateError) {
+        return { error: updateError.message }
+    }
+
+    return { success: "Password updated successfully" }
+}
+
+// --- PM-030: Soft Delete ---
+export async function softDeleteAccount() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: "Unauthorized" }
+
+    // Update profiles table
+    const { error } = await supabase
+        .from('profiles')
+        .update({
+            is_deleted: true,
+            deleted_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+
+    if (error) {
+        return { error: "Failed to deactivate account" }
+    }
+
+    // Sign out
+    await supabase.auth.signOut()
+
+    revalidatePath('/', 'layout')
+    // Client should redirect to login
+    return { success: "Account deactivated" }
 }
