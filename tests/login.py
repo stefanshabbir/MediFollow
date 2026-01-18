@@ -1,5 +1,3 @@
-import pytest
-
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -41,6 +39,4 @@ def login(driver, base_url:str, email:str, password:str, timeout:int = 10) -> we
     driver.find_element(By.CSS_SELECTOR, 'button[type="submit"]').click()
 
     WebDriverWait(driver, timeout).until(EC.title_is("MediFollow - Healthcare Management Platform"))
-    # print("\n" + "="*10)
-    # print(f"Login successful as user, {email}! Page title is: {driver.title}\n")
     return driver

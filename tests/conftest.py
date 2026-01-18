@@ -9,7 +9,7 @@ def driver():
     """
     Create and yield a webdriver instance. Always quit at teardown.
     """
-    drv = get_driver(headless=False)  # set True for CI/headless runs
+    drv = get_driver(headless=True)  # set True for CI/headless runs
     yield drv
     try:
         drv.quit()
