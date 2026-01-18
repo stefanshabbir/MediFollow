@@ -1,1 +1,1 @@
-pip install selenium webdriver-manager
+pip install selenium webdriver-manager pytest
