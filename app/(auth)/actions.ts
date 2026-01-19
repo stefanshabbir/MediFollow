@@ -147,7 +147,7 @@ export async function updateEmail(newEmail: string) {
     const emailSchema = z.string().email("Invalid email format")
     const result = emailSchema.safeParse(newEmail)
     if (!result.success) {
-        return { error: result.error.errors[0].message }
+        return { error: result.error.issues[0].message }
     }
 
     // 2. Auth Update (Supabase handles verification flow)
