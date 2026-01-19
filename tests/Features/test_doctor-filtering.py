@@ -1,5 +1,4 @@
 import config
-import random
 import time
 
 from selenium import webdriver
