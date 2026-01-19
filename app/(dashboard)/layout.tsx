@@ -36,15 +36,18 @@ export default async function DashboardLayout({
             { href: '/patient/book', label: 'Book Appointment' },
             { href: '/patient/history', label: 'History' },
             { href: '/timeline', label: 'Activity Log' },
+            { href: '/profile', label: 'Profile' },
         ],
         doctor: [
             { href: '/doctor', label: 'Dashboard' },
             { href: '/doctor/schedule', label: 'My Schedule' },
             { href: '/doctor/patients', label: 'Patients' },
+            { href: '/profile', label: 'Profile' },
         ],
         admin: [
             { href: '/admin', label: 'Dashboard' },
             { href: '/admin/invite', label: 'Invite Doctor' },
+            { href: '/profile', label: 'Profile' },
         ],
     }
 
@@ -82,7 +85,7 @@ export default async function DashboardLayout({
                     {/* Right Side */}
                     <div className="ml-auto flex items-center gap-3">
                         {/* User Info */}
-                        <div className="hidden sm:flex items-center gap-3 pr-3 border-r border-border">
+                        <Link href="/profile" className="hidden sm:flex items-center gap-3 pr-3 border-r border-border hover:opacity-80 transition-opacity">
                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm">
                                 {profile.full_name?.charAt(0)?.toUpperCase() || 'U'}
                             </div>
@@ -94,7 +97,7 @@ export default async function DashboardLayout({
                                     {profile.role}
                                 </p>
                             </div>
-                        </div>
+                        </Link>
 
                         {/* Theme Toggle */}
                         <ThemeToggle />
