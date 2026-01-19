@@ -166,7 +166,15 @@ export async function scheduleFollowUp(formData: FormData) {
     return { success: 'Follow-up appointment scheduled!' }
 }
 
-export async function getAppointments(role: string) {
+export async function getAppointments(
+    role: string,
+    filters?: {
+        startDate?: string,
+        endDate?: string,
+        status?: string,
+        doctorName?: string
+    }
+) {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -201,6 +209,23 @@ export async function getAppointments(role: string) {
         }
     }
 
+    if (filters) {
+        if (filters.startDate) {
+            query = query.gte('appointment_date', filters.startDate)
+        }
+        if (filters.endDate) {
+            query = query.lte('appointment_date', filters.endDate)
+        }
+        if (filters.status && filters.status !== 'all') {
+            const statuses = filters.status.split(',')
+            if (statuses.length > 1) {
+                query = query.in('status', statuses)
+            } else {
+                query = query.eq('status', filters.status)
+            }
+        }
+    }
+
     const { data, error } = await query
 
     if (error) {
@@ -208,7 +233,16 @@ export async function getAppointments(role: string) {
         return { error: error.message }
     }
 
-    return { data }
+    let filteredData = data
+
+    if (filters?.doctorName && filteredData) {
+        const lowerName = filters.doctorName.toLowerCase()
+        filteredData = filteredData.filter((appt: any) =>
+            appt.doctor?.full_name?.toLowerCase().includes(lowerName)
+        )
+    }
+
+    return { data: filteredData }
 }
 
 export async function updateAppointmentStatus(appointmentId: string, status: string) {
@@ -297,13 +331,17 @@ export async function cancelAppointment(appointmentId: string) {
     return { success: 'Appointment cancelled successfully' }
 }
 
-export async function getDoctors(organisationId?: string) {
-    // Check if user is authenticated (optional but good practice)
+export async function getDoctors(options?: {
+    search?: string,
+    organisationId?: string,
+    minFee?: number,
+    maxFee?: number,
+    availableOnly?: boolean
+}) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    // We allow public access for listing, but we need user for "has visited" check.
 
-    // Use Admin client to bypass RLS for public directory listing
     const supabaseAdmin = createAdminClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -317,11 +355,32 @@ export async function getDoctors(organisationId?: string) {
 
     let query = supabaseAdmin
         .from('profiles')
-        .select('id, organisation_id, full_name, fee_cents')
+        .select(`
+            id, 
+            organisation_id, 
+            full_name, 
+            fee_cents
+        `)
         .eq('role', 'doctor')
 
-    if (organisationId) {
-        query = query.eq('organisation_id', organisationId)
+    if (options?.search) {
+        if (options.search === "") {
+            // Wildcard - do nothing
+        } else {
+            query = query.ilike('full_name', `%${options.search}%`)
+        }
+    }
+
+    if (options?.organisationId) {
+        query = query.eq('organisation_id', options.organisationId)
+    }
+
+    if (options?.minFee !== undefined) {
+        query = query.gte('fee_cents', options.minFee)
+    }
+
+    if (options?.maxFee !== undefined) {
+        query = query.lte('fee_cents', options.maxFee)
     }
 
     const { data, error } = await query
@@ -331,8 +390,45 @@ export async function getDoctors(organisationId?: string) {
         return { error: error.message }
     }
 
-    console.log("getDoctors Data:", data?.length)
-    return { data }
+    let doctors = data || []
+
+    // Availability Filter - Fetch separately to avoid missing relationship error
+    if (options?.availableOnly && doctors.length > 0) {
+        const doctorIds = doctors.map((d: any) => d.id)
+
+        const { data: availableSchedules } = await supabaseAdmin
+            .from('doctor_schedules')
+            .select('doctor_id')
+            .in('doctor_id', doctorIds)
+            .eq('is_available', true)
+
+        const availableDoctorIds = new Set(availableSchedules?.map((s: any) => s.doctor_id))
+
+        doctors = doctors.filter((doc: any) => availableDoctorIds.has(doc.id))
+    }
+
+    // Add 'has_records' flag
+    if (user) {
+        const { data: interactionData } = await supabaseAdmin
+            .from('appointments')
+            .select('doctor_id')
+            .eq('patient_id', user.id)
+
+        const visitedDoctorIds = new Set(interactionData?.map((a: any) => a.doctor_id))
+
+        doctors = doctors.map((doc: any) => ({
+            ...doc,
+            has_records: visitedDoctorIds.has(doc.id)
+        }))
+    } else {
+        doctors = doctors.map((doc: any) => ({
+            ...doc,
+            has_records: false
+        }))
+    }
+
+    console.log("getDoctors Data:", doctors.length)
+    return { data: doctors }
 }
 
 
