@@ -96,9 +96,9 @@ def test_PM001(patient_login:webdriver.Edge | webdriver.Chrome):
     phone_input = driver.find_element(By.CSS_SELECTOR, "input[name='phone']")
     address_input = driver.find_element(By.CSS_SELECTOR, "input[name='address']")
 
-    assert full_name_input.get_attribute("value")
-    assert phone_input.is_displayed()
-    assert address_input.is_displayed()
+    assert full_name_input.get_attribute("value"), "FAILED: full name is empty"
+    assert phone_input.is_displayed(), "FAILED: phone input not visible"
+    assert address_input.is_displayed(), "FAILED: address input not visible"
 
 
 def test_PM002(patient_login:webdriver.Edge | webdriver.Chrome):
@@ -121,7 +121,7 @@ def test_PM002(patient_login:webdriver.Edge | webdriver.Chrome):
 
     driver.get(f"{config.BASE_URL}{PROFILE_PATH}")
     full_name_after_reload = wait_for_personal_tab(driver).get_attribute("value")
-    assert full_name_after_reload in {new_name, original_name}
+    assert full_name_after_reload in {new_name, original_name}, "FAILED: name did not persist or restore"
 
     # Revert to avoid polluting subsequent runs
     clear_and_type(driver.find_element(By.CSS_SELECTOR, "input[name='full_name']"), original_name)
@@ -153,7 +153,7 @@ def test_PM003(patient_login:webdriver.Edge | webdriver.Chrome):
 
     driver.refresh()
     phone_after_reload = driver.find_element(By.CSS_SELECTOR, "input[name='phone']").get_attribute("value")
-    assert phone_after_reload in {new_phone, original_phone}
+    assert phone_after_reload in {new_phone, original_phone}, "FAILED: phone did not persist or restore"
 
     # Revert to original
     clear_and_type(driver.find_element(By.CSS_SELECTOR, "input[name='phone']"), original_phone)
@@ -192,7 +192,7 @@ def test_PM004(patient_login:webdriver.Edge | webdriver.Chrome):
         # As a fallback, ensure invalid value is not persisted after reload
         driver.get(f"{config.BASE_URL}{PROFILE_PATH}")
         phone_after_reload = driver.find_element(By.CSS_SELECTOR, "input[name='phone']").get_attribute("value")
-        assert phone_after_reload == original_phone
+        assert phone_after_reload == original_phone, "FAILED: invalid phone persisted after reload"
 
 
 def test_PM006(patient_login:webdriver.Edge | webdriver.Chrome):
@@ -213,7 +213,7 @@ def test_PM006(patient_login:webdriver.Edge | webdriver.Chrome):
     driver.find_element(By.XPATH, "//button[normalize-space()='Update Email']").click()
     validation_message = driver.execute_script("return arguments[0].validationMessage;", email_input)
 
-    assert validation_message
+    assert validation_message, "FAILED: browser did not flag invalid email"
 
 """ FAILED TEST CASE
 def test_PM007(patient_login:webdriver.Edge | webdriver.Chrome):
@@ -279,7 +279,7 @@ def test_PM023(doctor_login:webdriver.Edge | webdriver.Chrome):
     bio_after_reload = WebDriverWait(driver, WAIT_TIME).until(
         EC.presence_of_element_located((By.CSS_SELECTOR, "textarea[name='bio']"))
     ).get_attribute("value")
-    assert bio_after_reload in {large_bio, original_bio}
+    assert bio_after_reload in {large_bio, original_bio}, "FAILED: bio did not persist or restore"
 
     # Revert to original content
     clear_and_type(driver.find_element(By.CSS_SELECTOR, "textarea[name='bio']"), original_bio)
@@ -322,9 +322,9 @@ def test_PM024(doctor_login:webdriver.Edge | webdriver.Chrome):
     except TimeoutException:
         alert_triggered = False
 
-    assert not alert_triggered
+    assert not alert_triggered, "FAILED: script alert was triggered"
     # Accept either sanitized/blocked or echoed; main check is no script execution
-    assert bio_after_reload in {script_payload, "", original_bio}
+    assert bio_after_reload in {script_payload, "", original_bio}, "FAILED: bio value unexpected after XSS attempt"
 
     # Revert to original content
     clear_and_type(driver.find_element(By.CSS_SELECTOR, "textarea[name='bio']"), original_bio)
