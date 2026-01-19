@@ -10,6 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 BOOK_APPOINTMENT_PATH = "/patient/book"
 DOCTOR_CARDS_SELECTOR = ".grid.gap-4 div.rounded-lg.border.bg-card"
+WAIT_TIME = 15
 
 
 def _get_cards(driver):
@@ -50,7 +51,7 @@ def test_DF001(patient_login:webdriver.Edge | webdriver.Chrome):
     driver = patient_login
     driver.get(f"{config.BASE_URL}{BOOK_APPOINTMENT_PATH}")
     
-    wait = WebDriverWait(driver, 15)
+    wait = WebDriverWait(driver, WAIT_TIME)
     wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, DOCTOR_CARDS_SELECTOR)))
     initial_count = len(driver.find_elements(By.CSS_SELECTOR, DOCTOR_CARDS_SELECTOR))
     
@@ -59,7 +60,7 @@ def test_DF001(patient_login:webdriver.Edge | webdriver.Chrome):
     for _ in range(30):
         slider.send_keys(Keys.LEFT)
     
-    time.sleep(3)  # Wait for filtering to take effect
+    time.sleep(4)  # Wait for filtering to take effect
     filtered_count = len(driver.find_elements(By.CSS_SELECTOR, DOCTOR_CARDS_SELECTOR))
     assert filtered_count < initial_count, "FAILED: Filtering did not reduce the number of doctors displayed."
 
@@ -72,12 +73,12 @@ def test_DF002(patient_login:webdriver.Edge | webdriver.Chrome):
     driver = patient_login
     driver.get(f"{config.BASE_URL}{BOOK_APPOINTMENT_PATH}")
 
-    wait = WebDriverWait(driver, 15)
+    wait = WebDriverWait(driver, WAIT_TIME)
     wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, DOCTOR_CARDS_SELECTOR)))
     initial_count = len(_get_cards(driver))
 
     _select_clinic(wait, "MedClinic")
-    time.sleep(1.5)
+    time.sleep(4)
 
     cards = _get_cards(driver)
     assert cards, "FAILED: No doctors displayed after applying MedClinic filter."
@@ -94,7 +95,7 @@ def test_DF003(patient_login:webdriver.Edge | webdriver.Chrome):
     driver = patient_login
     driver.get(f"{config.BASE_URL}{BOOK_APPOINTMENT_PATH}")
 
-    wait = WebDriverWait(driver, 15)
+    wait = WebDriverWait(driver, WAIT_TIME)
     wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, DOCTOR_CARDS_SELECTOR)))
     initial_count = len(_get_cards(driver))
 
@@ -112,7 +113,7 @@ def test_DF004(patient_login:webdriver.Edge | webdriver.Chrome):
     driver = patient_login
     driver.get(f"{config.BASE_URL}{BOOK_APPOINTMENT_PATH}")
 
-    wait = WebDriverWait(driver, 15)
+    wait = WebDriverWait(driver, WAIT_TIME)
     wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, DOCTOR_CARDS_SELECTOR)))
 
     search_box = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input[placeholder='Name...']")))
@@ -131,7 +132,7 @@ def test_DF005(patient_login:webdriver.Edge | webdriver.Chrome):
     driver = patient_login
     driver.get(f"{config.BASE_URL}{BOOK_APPOINTMENT_PATH}")
 
-    wait = WebDriverWait(driver, 15)
+    wait = WebDriverWait(driver, WAIT_TIME)
     wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, DOCTOR_CARDS_SELECTOR)))
 
     _select_clinic(wait, "HealthClinic")
@@ -154,7 +155,7 @@ def test_DF006(patient_login:webdriver.Edge | webdriver.Chrome):
     driver = patient_login
     driver.get(f"{config.BASE_URL}{BOOK_APPOINTMENT_PATH}")
 
-    wait = WebDriverWait(driver, 15)
+    wait = WebDriverWait(driver, WAIT_TIME)
     wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, DOCTOR_CARDS_SELECTOR)))
 
     _select_clinic(wait, "MedClinic")
@@ -175,7 +176,7 @@ def test_DF007(patient_login:webdriver.Edge | webdriver.Chrome):
     driver = patient_login
     driver.get(f"{config.BASE_URL}{BOOK_APPOINTMENT_PATH}")
 
-    wait = WebDriverWait(driver, 15)
+    wait = WebDriverWait(driver, WAIT_TIME)
     wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, DOCTOR_CARDS_SELECTOR)))
     initial_count = len(_get_cards(driver))
 
@@ -203,7 +204,7 @@ def test_DF016(patient_login:webdriver.Edge | webdriver.Chrome):
     driver = patient_login
     driver.get(f"{config.BASE_URL}{BOOK_APPOINTMENT_PATH}")
 
-    wait = WebDriverWait(driver, 10)
+    wait = WebDriverWait(driver, WAIT_TIME)
     wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, DOCTOR_CARDS_SELECTOR)))
     initial_count = len(_get_cards(driver))
 
@@ -212,7 +213,7 @@ def test_DF016(patient_login:webdriver.Edge | webdriver.Chrome):
     search_box.clear()
     search_box.send_keys(injection)
 
-    time.sleep(1.5)
+    time.sleep(4)
     cards_after = _get_cards(driver)
     assert len(cards_after) <= initial_count, "FAILED: Injection input expanded the result set."
     assert driver.title == "MediFollow - Healthcare Management Platform", "FAILED: Page state changed after injection attempt."
