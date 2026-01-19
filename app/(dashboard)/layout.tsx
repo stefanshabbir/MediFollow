@@ -35,6 +35,7 @@ export default async function DashboardLayout({
             { href: '/patient', label: 'Dashboard' },
             { href: '/patient/book', label: 'Book Appointment' },
             { href: '/patient/history', label: 'History' },
+            { href: '/timeline', label: 'Activity Log' },
         ],
         doctor: [
             { href: '/doctor', label: 'Dashboard' },

@@ -567,65 +567,78 @@ export async function getAvailableSlots(doctorId: string, date: string) {
 // Appointment Request Actions
 
 export async function createAppointmentRequest(formData: FormData) {
-    const supabase = await createClient()
+    try {
+        const supabase = await createClient()
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-        return { error: 'Unauthorized' }
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+            return { error: 'Unauthorized' }
+        }
+
+        const doctorId = formData.get('doctorId') as string
+        const appointmentDate = formData.get('appointmentDate') as string
+        const startTime = formData.get('startTime') as string
+        const endTime = formData.get('endTime') as string
+        const notes = formData.get('notes') as string
+        const previousAppointmentId = formData.get('previousAppointmentId') as string
+
+        // Get doctor's organisation_id
+        const { data: doctorProfile } = await supabase
+            .from('profiles')
+            .select('organisation_id, full_name')
+            .eq('id', doctorId)
+            .single()
+
+        if (!doctorProfile) {
+            return { error: 'Doctor not found' }
+        }
+
+        const { error } = await supabase
+            .from('appointment_requests')
+            .insert({
+                patient_id: user.id,
+                doctor_id: doctorId,
+                organisation_id: doctorProfile.organisation_id,
+                appointment_date: appointmentDate,
+                start_time: startTime,
+                end_time: endTime,
+                notes: notes || null,
+                status: 'pending',
+                linked_appointment_id: previousAppointmentId || null
+            })
+
+        if (error) {
+            console.error("Insert Error:", error)
+            return { error: error.message }
+        }
+
+        // Send request received email
+        if (user.email && doctorProfile) {
+            console.log('[CreateRequest] Sending request email to', user.email)
+            try {
+                await sendEmail({
+                    to: user.email,
+                    subject: 'Appointment Request Received - MediFollow',
+                    text: `Your appointment request with ${doctorProfile.full_name} for ${appointmentDate} at ${startTime} has been received.`,
+                    html: getAppointmentRequestEmail(
+                        user.user_metadata?.full_name || 'Patient',
+                        doctorProfile.full_name || 'Doctor',
+                        appointmentDate,
+                        startTime
+                    )
+                })
+            } catch (emailError) {
+                console.error("Email sending failed:", emailError)
+                // Don't fail the request if email fails, but log it
+            }
+        }
+
+        revalidatePath('/patient')
+        return { success: 'Appointment request submitted successfully! Awaiting doctor approval.' }
+    } catch (err: any) {
+        console.error("createAppointmentRequest Unexpected Error:", err)
+        return { error: "Internal Server Error: " + (err.message || String(err)) }
     }
-
-    const doctorId = formData.get('doctorId') as string
-    const appointmentDate = formData.get('appointmentDate') as string
-    const startTime = formData.get('startTime') as string
-    const endTime = formData.get('endTime') as string
-    const notes = formData.get('notes') as string
-
-    // Get doctor's organisation_id
-    const { data: doctorProfile } = await supabase
-        .from('profiles')
-        .select('organisation_id, full_name')
-        .eq('id', doctorId)
-        .single()
-
-    if (!doctorProfile) {
-        return { error: 'Doctor not found' }
-    }
-
-    const { error } = await supabase
-        .from('appointment_requests')
-        .insert({
-            patient_id: user.id,
-            doctor_id: doctorId,
-            organisation_id: doctorProfile.organisation_id,
-            appointment_date: appointmentDate,
-            start_time: startTime,
-            end_time: endTime,
-            notes: notes || null,
-            status: 'pending'
-        })
-
-    if (error) {
-        return { error: error.message }
-    }
-
-    // Send request received email
-    if (user.email && doctorProfile) {
-        console.log('[CreateRequest] Sending request email to', user.email)
-        await sendEmail({
-            to: user.email,
-            subject: 'Appointment Request Received - MediFollow',
-            text: `Your appointment request with ${doctorProfile.full_name} for ${appointmentDate} at ${startTime} has been received.`,
-            html: getAppointmentRequestEmail(
-                user.user_metadata?.full_name || 'Patient',
-                doctorProfile.full_name || 'Doctor',
-                appointmentDate,
-                startTime
-            )
-        })
-    }
-
-    revalidatePath('/patient')
-    return { success: 'Appointment request submitted successfully! Awaiting doctor approval.' }
 }
 
 export async function getAppointmentRequests(role: string) {
@@ -726,7 +739,8 @@ export async function approveAppointmentRequest(requestId: string) {
             status: 'confirmed',
             payment_status: 'pending',
             payment_amount_cents: doctorProfile?.fee_cents ?? 0,
-            currency: 'LKR'
+            currency: 'LKR',
+            previous_appointment_id: request.linked_appointment_id // Link the appointment
         })
         .select()
         .single()
