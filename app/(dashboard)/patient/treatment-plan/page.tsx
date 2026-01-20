@@ -83,6 +83,7 @@ export default async function PatientTreatmentPlanPage() {
                                 }}
                                 planAppointments={activePlan.plan_appointments}
                                 isPatient={true}
+                                doctorId={activePlan.doctor_id}
                             />
                         </div>
                     )}

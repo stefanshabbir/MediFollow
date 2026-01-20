@@ -23,7 +23,9 @@ function BookAppointmentForm() {
     // Get query params for follow-up
     const preselectedDoctorId = searchParams.get('doctorId')
     const previousAppointmentId = searchParams.get('previousAppointmentId')
-    const isFollowUp = !!previousAppointmentId
+    const stepId = searchParams.get('stepId')
+    const reason = searchParams.get('reason')
+    const isFollowUp = !!previousAppointmentId || !!stepId
 
     // Data State
     const [doctors, setDoctors] = useState<any[]>([])
@@ -47,7 +49,7 @@ function BookAppointmentForm() {
     const [selectedDate, setSelectedDate] = useState("")
     const [availableSlots, setAvailableSlots] = useState<any[]>([])
     const [selectedSlot, setSelectedSlot] = useState<any>(null)
-    const [notes, setNotes] = useState(isFollowUp ? "Follow-up appointment" : "")
+    const [notes, setNotes] = useState(reason || (isFollowUp && previousAppointmentId ? "Follow-up appointment" : ""))
 
     // Loading State
     const [isLoadingDoctors, setIsLoadingDoctors] = useState(false)
@@ -148,6 +150,9 @@ function BookAppointmentForm() {
         formData.append('notes', notes)
         if (previousAppointmentId) {
             formData.append('previousAppointmentId', previousAppointmentId)
+        }
+        if (stepId) {
+            formData.append('stepId', stepId)
         }
 
         try {
@@ -293,7 +298,7 @@ function BookAppointmentForm() {
                                 </CardContent>
                                 <CardFooter>
                                     <Button
-                                        variant={selectedDoctor === doctor.id ? "default" : "secondary"}
+                                        variant={selectedDoctor === doctor.id ? "default" : "outline"}
                                         className="w-full"
                                         disabled={isFollowUp && preselectedDoctorId !== doctor.id}
                                     >

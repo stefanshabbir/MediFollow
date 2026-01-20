@@ -30,7 +30,7 @@ export default async function PatientDashboard() {
 
   const upcomingAppointments = appointments?.filter((apt: any) =>
     new Date(apt.appointment_date) >= new Date() && apt.status !== 'cancelled'
-  ) || []
+  ).sort((a: any, b: any) => new Date(a.appointment_date + 'T' + a.start_time).getTime() - new Date(b.appointment_date + 'T' + b.start_time).getTime()) || []
 
   const pastAppointments = appointments?.filter((apt: any) =>
     new Date(apt.appointment_date) < new Date() || apt.status === 'completed'
