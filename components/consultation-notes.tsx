@@ -148,12 +148,12 @@ export function ConsultationNotes({ patientId, initialData }: ConsultationNotesP
                 </div>
                 <div className="flex items-center gap-2">
                     {status === 'draft' && (
-                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
+                        <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-800">
                             Draft
                         </Badge>
                     )}
                     {status === 'finalized' && (
-                        <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-200">
+                        <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 hover:bg-emerald-200 dark:hover:bg-emerald-800">
                             <Lock className="mr-1 h-3 w-3" />
                             Finalized
                         </Badge>

@@ -20,6 +20,11 @@ export async function uploadMedicalRecord(formData: FormData) {
         return { error: 'No file provided' }
     }
 
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+        return { error: 'Invalid file type. Only PDF and images are allowed.' }
+    }
+
     if (!patientId) {
         return { error: 'Patient ID is required' }
     }

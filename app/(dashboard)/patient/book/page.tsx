@@ -23,7 +23,9 @@ function BookAppointmentForm() {
     // Get query params for follow-up
     const preselectedDoctorId = searchParams.get('doctorId')
     const previousAppointmentId = searchParams.get('previousAppointmentId')
-    const isFollowUp = !!previousAppointmentId
+    const stepId = searchParams.get('stepId')
+    const reason = searchParams.get('reason')
+    const isFollowUp = !!previousAppointmentId || !!stepId
 
     // Data State
     const [doctors, setDoctors] = useState<any[]>([])
@@ -47,7 +49,7 @@ function BookAppointmentForm() {
     const [selectedDate, setSelectedDate] = useState("")
     const [availableSlots, setAvailableSlots] = useState<any[]>([])
     const [selectedSlot, setSelectedSlot] = useState<any>(null)
-    const [notes, setNotes] = useState(isFollowUp ? "Follow-up appointment" : "")
+    const [notes, setNotes] = useState(reason || (isFollowUp && previousAppointmentId ? "Follow-up appointment" : ""))
 
     // Loading State
     const [isLoadingDoctors, setIsLoadingDoctors] = useState(false)
@@ -149,6 +151,9 @@ function BookAppointmentForm() {
         if (previousAppointmentId) {
             formData.append('previousAppointmentId', previousAppointmentId)
         }
+        if (stepId) {
+            formData.append('stepId', stepId)
+        }
 
         try {
             const result = await createAppointmentRequest(formData)
@@ -221,7 +226,7 @@ function BookAppointmentForm() {
                                 min={0}
                                 max={1000000} // 10,000 LKR
                                 step={10000} // 100 LKR steps
-                                onValueChange={(val) => setFeeRange([feeRange[0], val[0]])}
+                                onValueChange={(val: any) => setFeeRange([feeRange[0], val[0]])}
                             />
                             <div className="flex justify-between text-xs text-muted-foreground">
                                 <span>Max: {feeRange[1] === 1000000 ? "Any Price" : (feeRange[1] / 100).toFixed(2)}</span>
@@ -293,7 +298,7 @@ function BookAppointmentForm() {
                                 </CardContent>
                                 <CardFooter>
                                     <Button
-                                        variant={selectedDoctor === doctor.id ? "default" : "secondary"}
+                                        variant={selectedDoctor === doctor.id ? "default" : "outline"}
                                         className="w-full"
                                         disabled={isFollowUp && preselectedDoctorId !== doctor.id}
                                     >

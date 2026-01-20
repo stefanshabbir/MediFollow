@@ -604,7 +604,8 @@ export async function createAppointmentRequest(formData: FormData) {
                 end_time: endTime,
                 notes: notes || null,
                 status: 'pending',
-                linked_appointment_id: previousAppointmentId || null
+                linked_appointment_id: previousAppointmentId || null,
+                treatment_plan_step_id: formData.get('stepId') ? String(formData.get('stepId')) : null
             })
 
         if (error) {
@@ -787,6 +788,48 @@ export async function approveAppointmentRequest(requestId: string) {
                 request.start_time
             )
         })
+    }
+
+    // Link to treatment plan if applicable
+    if (request.treatment_plan_step_id) {
+        // Find the treatment plan appointment record for this step
+        // We need to know which PLAN it belongs to. The step_id is unique to a template, but multiple plans use the same template/steps.
+        // Wait, `treatment_template_steps` are shared. `treatment_plan_appointments` links plan+step.
+        // We need to find the `patient_treatment_plans` for this patient that uses this `template_id` (via step) AND is active.
+        // Or simpler: We need to find the `treatment_plan_appointments` where `step_id` = request.treatment_plan_step_id AND plan owner is patient.
+
+        // Let's find the active plan for this patient that contains this step
+        const { data: planAppointment } = await supabase
+            .from('treatment_plan_appointments')
+            .select('id, plan_id')
+            .eq('step_id', request.treatment_plan_step_id)
+            // check plan ownership
+            .eq('status', 'pending') // Only pending ones
+        // We need to join with plans to ensure it's this patient's plan
+        // But doing a join in update is hard. Let's select first.
+
+        // This is tricky because `step_id` is sending us to the TEMPLATE step.
+        // But many patients have plans with that template step.
+        // We need to find the specific `treatment_plan_appointment` for THIS patient.
+
+        const { data: correctPlanAppt } = await supabase
+            .from('treatment_plan_appointments')
+            .select('id, plan_id, patient_treatment_plans!inner(patient_id)')
+            .eq('step_id', request.treatment_plan_step_id)
+            .eq('patient_treatment_plans.patient_id', request.patient_id)
+            .single()
+
+        if (correctPlanAppt) {
+            const { error: linkError } = await supabase
+                .from('treatment_plan_appointments')
+                .update({
+                    appointment_id: appointment.id,
+                    status: 'scheduled'
+                })
+                .eq('id', correctPlanAppt.id)
+
+            if (linkError) console.error("Failed to link plan appointment", linkError)
+        }
     }
 
     revalidatePath('/doctor')

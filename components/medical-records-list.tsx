@@ -53,13 +53,13 @@ export function MedicalRecordsList({ records }: MedicalRecordsListProps) {
                     {records.map((record) => (
                         <div key={record.id} className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-muted/20 transition-colors">
                             <div className="flex items-start gap-4">
-                                <div className={`mt-1 p-2 rounded-full ${record.content ? 'bg-blue-100 text-blue-700' : 'bg-primary/10 text-primary'}`}>
+                                <div className={`mt-1 p-2 rounded-full ${record.content ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100' : 'bg-primary/10 text-primary'}`}>
                                     {record.content ? <StickyNote className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <h4 className="font-semibold">{record.file_name || 'Clinical Consultation Note'}</h4>
-                                        {record.status === 'draft' && <Badge variant="outline" className="text-yellow-600 border-yellow-200 bg-yellow-50">Draft</Badge>}
+                                        {record.status === 'draft' && <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-100 dark:text-amber-200 dark:border-amber-700 dark:bg-amber-900">Draft</Badge>}
                                     </div>
 
                                     {record.description && (

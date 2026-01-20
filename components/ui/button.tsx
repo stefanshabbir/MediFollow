@@ -13,12 +13,12 @@ const buttonVariants = cva(
         default: "bg-sky-500 text-white shadow-md hover:bg-sky-600 focus-visible:ring-sky-400",
         // Destructive: Soft rose for negative actions
         destructive: "bg-rose-500 text-white shadow-md hover:bg-rose-600 focus-visible:ring-rose-400",
-        // Outline: Light with visible border in both modes
-        outline: "border-2 border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:border-sky-500 dark:border-slate-400 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800 dark:hover:border-sky-400",
+        // Outline: Theme-aware with visible border in both modes - ensure text stays readable
+        outline: "border-2 border-slate-300 bg-background text-foreground hover:bg-slate-100 hover:text-slate-900 hover:border-sky-500 dark:border-slate-600 dark:hover:bg-slate-700 dark:hover:text-white dark:hover:border-sky-400",
         // Secondary: Uses the vibrant sky blue style (same as default for consistency)
         secondary: "bg-sky-500 text-white shadow-md hover:bg-sky-600 focus-visible:ring-sky-400",
-        // Ghost: Minimal but visible
-        ghost: "text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800",
+        // Ghost: Minimal but visible in both themes - ensure text stays readable
+        ghost: "text-foreground hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white",
         // Link: Text only
         link: "text-sky-600 underline-offset-4 hover:underline dark:text-sky-400",
         // Success: Green for positive actions
