@@ -85,9 +85,9 @@ export function AccountSettings({ profile }: { profile: any }) {
             </div>
 
             {/* Danger Zone */}
-            <div className="space-y-4 border border-red-200 bg-red-50 p-4 rounded-md">
-                <h3 className="font-medium text-red-700">Danger Zone</h3>
-                <p className="text-sm text-red-600">Deactivating your account will disable login.</p>
+            <div className="space-y-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-4 rounded-md">
+                <h3 className="font-medium text-red-700 dark:text-red-400">Danger Zone</h3>
+                <p className="text-sm text-red-600 dark:text-red-300">Deactivating your account will disable login.</p>
                 <Button variant="destructive" onClick={handleDelete} disabled={loading}>
                     Deactivate Account
                 </Button>

@@ -221,7 +221,7 @@ function BookAppointmentForm() {
                                 min={0}
                                 max={1000000} // 10,000 LKR
                                 step={10000} // 100 LKR steps
-                                onValueChange={(val) => setFeeRange([feeRange[0], val[0]])}
+                                onValueChange={(val: any) => setFeeRange([feeRange[0], val[0]])}
                             />
                             <div className="flex justify-between text-xs text-muted-foreground">
                                 <span>Max: {feeRange[1] === 1000000 ? "Any Price" : (feeRange[1] / 100).toFixed(2)}</span>

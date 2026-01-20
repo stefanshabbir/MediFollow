@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { ConsultationNotes } from '@/components/consultation-notes'
+import { PatientTreatmentPlanManager } from '@/components/doctor/PatientTreatmentPlanManager'
 
 export default async function PatientDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
@@ -35,12 +36,13 @@ export default async function PatientDetailsPage({ params }: { params: Promise<{
     // Check for existing draft
     const activeDraft = records?.find(r =>
         r.status === 'draft' &&
-        r.doctor?.full_name && // records returns doctor name, but we check matching doctor_id if available? 
-        // Wait, getPatientRecords joined doctor profile. It didn't return doctor_id in the top level text maybe?
-        // Let's check records.ts getPatientRecords select: "*, doctor:profiles!doctor_id(full_name)".
-        // It returns '*' from medical_records, so doctor_id IS present.
         r.doctor_id === user?.id
     ) || null
+
+    // Fetch Active Treatment Plan
+    const { getPatientTreatmentPlans } = await import('@/app/actions/treatment-plan')
+    const { data: treatmentPlans } = await getPatientTreatmentPlans(id)
+    const activePlan = treatmentPlans?.find((p: any) => p.status === 'active') || null
 
     // Fetch Appointment History
     const { data: allAppointments, error: appointmentsError } = await getAppointments('doctor')
@@ -95,6 +97,11 @@ export default async function PatientDetailsPage({ params }: { params: Promise<{
 
                 {/* Right Column: Records & History */}
                 <div className="space-y-6 lg:col-span-2">
+                    {/* Treatment Plan */}
+                    <div className="space-y-2">
+                        <PatientTreatmentPlanManager patientId={id} activePlan={activePlan} />
+                    </div>
+
                     {/* Medical Records List */}
                     <div className="space-y-2">
                         <h2 className="text-xl font-semibold tracking-tight">Medical Records</h2>

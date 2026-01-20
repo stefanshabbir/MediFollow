@@ -155,7 +155,7 @@ export default function Home() {
             <Button asChild size="lg" className="min-w-[180px] bg-white text-primary hover:bg-white/90">
               <Link href="/register">Create Free Account</Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="min-w-[180px] border-white/30 text-primary-foreground hover:bg-white/10">
+            <Button asChild size="lg" variant="outline" className="min-w-[180px] border-2 border-white bg-transparent text-white hover:bg-white hover:text-primary">
               <Link href="/login">Sign In</Link>
             </Button>
           </div>

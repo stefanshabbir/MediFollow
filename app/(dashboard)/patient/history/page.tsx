@@ -120,7 +120,7 @@ export default async function PatientHistoryPage(props: { searchParams: Promise<
                             <select
                                 name="status"
                                 defaultValue={status || ""}
-                                className="h-8 rounded-md border text-sm px-2 w-[120px]"
+                                className="h-8 rounded-md border border-border bg-background text-foreground text-sm px-2 w-[120px] focus:outline-none focus:ring-2 focus:ring-ring"
                             >
                                 <option value="">All Statuses</option>
                                 <option value="completed">Completed</option>
@@ -154,9 +154,9 @@ export default async function PatientHistoryPage(props: { searchParams: Promise<
                                         <div className="space-y-1 mb-2 sm:mb-0">
                                             <div className="flex items-center gap-2">
                                                 <h3 className="font-semibold">{apt.doctor?.full_name || 'Doctor'}</h3>
-                                                <span className={`text-xs px-2 py-0.5 rounded-full ${apt.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                                                    apt.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                                                        'bg-gray-100 text-gray-700'
+                                                <span className={`text-xs px-2 py-0.5 rounded-full ${apt.status === 'completed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100' :
+                                                    apt.status === 'cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-100' :
+                                                        'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100'
                                                     }`}>
                                                     {apt.status}
                                                 </span>

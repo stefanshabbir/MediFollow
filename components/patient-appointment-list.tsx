@@ -67,7 +67,7 @@ function AppointmentNodeItem({ node, type, depth = 0 }: { node: AppointmentNode,
                 <div className="flex items-center gap-2">
                     {/* Status Badge */}
                     {isPast ? (
-                        <span className="inline-flex items-center rounded-md bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 px-2.5 py-1 text-xs font-semibold">
+                        <span className="inline-flex items-center rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-600 px-2.5 py-1 text-xs font-semibold">
                             {node.status.charAt(0).toUpperCase() + node.status.slice(1)}
                         </span>
                     ) : (

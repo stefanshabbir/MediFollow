@@ -172,19 +172,6 @@ export default function DoctorSchedulePage() {
                     </Button>
                 </CardContent>
             </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>How it works</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm text-muted-foreground">
-                    <p>• Toggle availability for each day of the week</p>
-                    <p>• Set your working hours (start and end time)</p>
-                    <p>• Optionally add break times (e.g., lunch break)</p>
-                    <p>• Patients will only see available time slots based on your schedule</p>
-                    <p>• Time slots are generated in 30-minute intervals</p>
-                </CardContent>
-            </Card>
         </div>
     )
 }

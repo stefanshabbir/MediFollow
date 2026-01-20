@@ -52,10 +52,10 @@ function AppointmentNodeItem({ node, depth = 0 }: { node: AppointmentNode, depth
                     {node.notes && <p className="text-xs text-muted-foreground line-clamp-1 italic">"{node.notes}"</p>}
                 </div>
 
-                <div className={`px-2 py-1 rounded-full text-xs capitalize ${node.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                    node.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                        node.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                            'bg-gray-100 text-gray-700'
+                <div className={`px-2 py-1 rounded-full text-xs capitalize ${node.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-100' :
+                    node.status === 'completed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100' :
+                        node.status === 'cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-100' :
+                            'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-100'
                     }`}>
                     {node.status}
                 </div>

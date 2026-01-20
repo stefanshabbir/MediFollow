@@ -63,10 +63,12 @@ export function MedicalRecordUpload({ patientId }: MedicalRecordUploadProps) {
                         <Input
                             id="record-file"
                             type="file"
+                            accept=".pdf,image/*"
                             onChange={handleFileChange}
                             required
                             disabled={isUploading}
                         />
+                        <p className="text-xs text-muted-foreground mt-1">Accepted formats: PDF, PNG, JPG, WEBP</p>
                     </div>
 
                     <div className="space-y-2">
