@@ -9,7 +9,7 @@ def driver():
     """
     Create and yield a webdriver instance. Always quit at teardown.
     """
-    drv = get_driver(headless=True)  # set True for CI/headless runs
+    drv = get_driver(headless=False)  # set True for CI/headless runs
     yield drv
     try:
         drv.quit()
@@ -30,4 +30,12 @@ def doctor_login(driver):
     Log in using credentials from config.py and yield the driver.
     """
     login(driver, config.BASE_URL, config.DOCTOR_EMAIL, config.UNIVERSAL_PASSWORD)
+    yield driver
+
+@pytest.fixture(scope="function")
+def admin_login(driver):
+    """
+    Log in using credentials from config.py and yield the driver.
+    """
+    login(driver, config.BASE_URL, config.ADMIN_EMAIL, config.UNIVERSAL_PASSWORD)
     yield driver

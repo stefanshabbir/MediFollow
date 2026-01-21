@@ -1,4 +1,5 @@
 BASE_URL = "https://medi-follow.vercel.app"
+ADMIN_EMAIL = "admin@test.com"
 DOCTOR_EMAIL = "hinoseb173@alexida.com"
 PATIENT_EMAIL = "stefanshabbir@gmail.com"
 UNIVERSAL_PASSWORD = "123456789"
