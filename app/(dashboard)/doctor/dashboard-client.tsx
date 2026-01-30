@@ -107,9 +107,14 @@ export function DoctorDashboardClient({ initialAppointments, initialRequests }: 
                         Manage your appointments and patients
                     </p>
                 </div>
-                <Button asChild variant="outline">
-                    <Link href="/doctor/schedule">Manage Schedule</Link>
-                </Button>
+                <div className="flex gap-2">
+                    <Button asChild variant="outline">
+                        <Link href="/doctor/sessions">Manage Sessions</Link>
+                    </Button>
+                    <Button asChild variant="outline">
+                        <Link href="/doctor/schedule">Recurring Schedule</Link>
+                    </Button>
+                </div>
             </div>
 
             {/* Metrics Cards */}
@@ -180,9 +185,12 @@ export function DoctorDashboardClient({ initialAppointments, initialRequests }: 
                             {todayAppointments.map((appointment: any) => (
                                 <div key={appointment.id} className="flex items-center justify-between p-4 rounded-lg border bg-card">
                                     <div className="space-y-1 flex-1">
-                                        <p className="font-semibold text-foreground">
+                                        <Link
+                                            href={`/doctor/patients/${appointment.patient_id}?appointmentId=${appointment.id}`}
+                                            className="font-semibold text-foreground hover:underline"
+                                        >
                                             {appointment.patient?.full_name}
-                                        </p>
+                                        </Link>
                                         <p className="text-sm text-muted-foreground">
                                             {appointment.start_time.substring(0, 5)} - {appointment.end_time.substring(0, 5)}
                                         </p>

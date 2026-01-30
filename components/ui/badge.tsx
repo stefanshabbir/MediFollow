@@ -62,6 +62,12 @@ const statusBadgeVariants = cva(
                     "dark:bg-red-900 dark:text-red-100 dark:border-red-700"
                 ].join(" "),
 
+                // Action Required - Amber/Orange
+                awaiting_payment: [
+                    "bg-amber-100 text-amber-800 border-amber-300",
+                    "dark:bg-amber-900 dark:text-amber-100 dark:border-amber-700"
+                ].join(" "),
+
                 // Default/Secondary - Neutral
                 default: [
                     "bg-slate-100 text-slate-800 border-slate-300",
@@ -83,6 +89,7 @@ const statusIcons: Record<string, React.ElementType> = {
     pending: Clock,
     rejected: X,
     cancelled: X,
+    awaiting_payment: AlertCircle, // Use AlertCircle or import CreditCard if preferred. Let's stick to existing imports or use AlertCircle for now as it's an alert.
     default: AlertCircle,
 }
 
@@ -90,7 +97,7 @@ export interface StatusBadgeProps
     extends React.HTMLAttributes<HTMLSpanElement>,
     VariantProps<typeof statusBadgeVariants> {
     /** The status to display */
-    status: 'approved' | 'confirmed' | 'success' | 'pending' | 'rejected' | 'cancelled' | 'default'
+    status: 'approved' | 'confirmed' | 'success' | 'pending' | 'rejected' | 'cancelled' | 'awaiting_payment' | 'default'
     /** Custom label text (if not provided, capitalizes status) */
     label?: string
     /** Hide the icon (not recommended for accessibility) */
@@ -115,7 +122,7 @@ export function StatusBadge({
     ...props
 }: StatusBadgeProps) {
     const Icon = statusIcons[status] || statusIcons.default
-    const displayLabel = label || status.charAt(0).toUpperCase() + status.slice(1)
+    const displayLabel = label || (status.charAt(0).toUpperCase() + status.slice(1)).replace(/_/g, " ")
 
     return (
         <span
