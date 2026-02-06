@@ -153,8 +153,8 @@ export default function DoctorSessionsPage() {
                                     />
                                 </div>
                                 <DialogFooter>
-                                    <Button type="submit" disabled={isCreating}>
-                                        {isCreating ? <Loader2 className="animate-spin h-4 w-4" /> : 'Create Session'}
+                                    <Button type="submit" isLoading={isCreating}>
+                                        Create Session
                                     </Button>
                                 </DialogFooter>
                             </form>

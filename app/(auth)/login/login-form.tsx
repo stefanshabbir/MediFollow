@@ -161,7 +161,8 @@ export function LoginForm() {
 
           <Button
             type="submit"
-            disabled={isPending || !formIsValid}
+            isLoading={isPending}
+            disabled={!formIsValid}
             size="lg"
             className="w-full text-base font-semibold"
           >
