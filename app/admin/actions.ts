@@ -58,7 +58,8 @@ export async function inviteDoctor(formData: FormData) {
                 id: inviteData.user.id,
                 role: 'doctor',
                 full_name: fullName,
-                organisation_id: profile.organisation_id
+                organisation_id: profile.organisation_id,
+                specialization: formData.get('specialization') as string || null
             })
 
         if (profileError) {

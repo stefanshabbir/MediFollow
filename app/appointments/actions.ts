@@ -43,6 +43,15 @@ export async function createAppointment(formData: FormData) {
         return { error: 'Doctor not found' }
     }
 
+    // Find session for this appointment
+    const { data: session } = await supabase
+        .from('doctor_sessions')
+        .select('id, label')
+        .eq('doctor_id', doctorId)
+        .eq('date', appointmentDate)
+        .eq('status', 'active')
+        .single()
+
     const { error } = await supabase
         .from('appointments')
         .insert({
@@ -57,7 +66,9 @@ export async function createAppointment(formData: FormData) {
             payment_status: 'pending',
             payment_amount_cents: doctorProfile.fee_cents ?? 0,
             currency: 'LKR',
-            previous_appointment_id: previousAppointmentId || null
+            previous_appointment_id: previousAppointmentId || null,
+            session_id: session?.id || null,
+            session_label: session?.label || null
         })
 
 
@@ -336,7 +347,8 @@ export async function getDoctors(options?: {
     organisationId?: string,
     minFee?: number,
     maxFee?: number,
-    availableOnly?: boolean
+    availableOnly?: boolean,
+    specialization?: string
 }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -359,7 +371,8 @@ export async function getDoctors(options?: {
             id, 
             organisation_id, 
             full_name, 
-            fee_cents
+            fee_cents,
+            specialization
         `)
         .eq('role', 'doctor')
 
@@ -373,6 +386,10 @@ export async function getDoctors(options?: {
 
     if (options?.organisationId) {
         query = query.eq('organisation_id', options.organisationId)
+    }
+
+    if (options?.specialization && options.specialization !== "all") {
+        query = query.eq('specialization', options.specialization)
     }
 
     if (options?.minFee !== undefined) {
@@ -472,20 +489,21 @@ export async function getAvailableSlots(doctorId: string, date: string) {
     // Get day of week for the selected date (0 = Sunday, 6 = Saturday)
     const dayOfWeek = new Date(date).getDay()
 
-    // Get doctor's schedule for this day
-    const { data: scheduleData, error: scheduleError } = await supabaseAdmin
-        .from('doctor_schedules')
+    // Get doctor's session for this day
+    const { data: sessionData, error: sessionError } = await supabaseAdmin
+        .from('doctor_sessions')
         .select('*')
         .eq('doctor_id', doctorId)
-        .eq('day_of_week', dayOfWeek)
+        .eq('date', date)
+        .eq('status', 'active')
         .single()
 
-    if (scheduleError) {
-        console.error("getAvailableSlots Error (Schedule):", scheduleError)
+    if (sessionError && sessionError.code !== 'PGRST116') {
+        console.error("getAvailableSlots Error (Session):", sessionError)
     }
 
-    // If doctor is not available on this day, return empty slots
-    if (!scheduleData || !scheduleData.is_available) {
+    // If no session exists for this day, return empty slots
+    if (!sessionData) {
         return { data: [] }
     }
 
@@ -501,28 +519,18 @@ export async function getAvailableSlots(doctorId: string, date: string) {
         console.error("getAvailableSlots Error (Appointments):", appointmentError)
     }
 
-    // Parse doctor's working hours
-    const startHour = parseInt(scheduleData.start_time.split(':')[0])
-    const startMinute = parseInt(scheduleData.start_time.split(':')[1])
-    const endHour = parseInt(scheduleData.end_time.split(':')[0])
-    const endMinute = parseInt(scheduleData.end_time.split(':')[1])
+    // Parse doctor's session hours
+    const startHour = parseInt(sessionData.start_time.split(':')[0])
+    const startMinute = parseInt(sessionData.start_time.split(':')[1])
+    const endHour = parseInt(sessionData.end_time.split(':')[0])
+    const endMinute = parseInt(sessionData.end_time.split(':')[1])
+    const slotDuration = sessionData.slot_duration_minutes || 15
 
-    // Parse break times if they exist
+    // No break times in session model for now (or could add later)
     let breakStart: { hour: number, minute: number } | null = null
     let breakEnd: { hour: number, minute: number } | null = null
 
-    if (scheduleData.break_start_time && scheduleData.break_end_time) {
-        breakStart = {
-            hour: parseInt(scheduleData.break_start_time.split(':')[0]),
-            minute: parseInt(scheduleData.break_start_time.split(':')[1])
-        }
-        breakEnd = {
-            hour: parseInt(scheduleData.break_end_time.split(':')[0]),
-            minute: parseInt(scheduleData.break_end_time.split(':')[1])
-        }
-    }
-
-    // Generate time slots (30-minute intervals)
+    // Generate time slots
     const slots = []
     let currentHour = startHour
     let currentMinute = startMinute
@@ -530,23 +538,26 @@ export async function getAvailableSlots(doctorId: string, date: string) {
     while (currentHour < endHour || (currentHour === endHour && currentMinute < endMinute)) {
         const startTime = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}:00`
 
-        // Calculate end time (30 minutes later)
-        let endSlotMinute = currentMinute + 30
+        // Calculate end time
+        let endSlotMinute = currentMinute + slotDuration
         let endSlotHour = currentHour
-        if (endSlotMinute >= 60) {
+        while (endSlotMinute >= 60) {
             endSlotMinute -= 60
             endSlotHour += 1
         }
         const endTime = `${endSlotHour.toString().padStart(2, '0')}:${endSlotMinute.toString().padStart(2, '0')}:00`
 
         // Check if slot is during break time
+        // (breakStart is always null currently, so this is safe)
         const isDuringBreak = breakStart && breakEnd && (
+            // @ts-ignore
             (currentHour > breakStart.hour || (currentHour === breakStart.hour && currentMinute >= breakStart.minute)) &&
+            // @ts-ignore
             (currentHour < breakEnd.hour || (currentHour === breakEnd.hour && currentMinute < breakEnd.minute))
         )
 
         // Check if slot is already booked
-        const isBooked = appointments?.some(apt => apt.start_time === startTime)
+        const isBooked = appointments?.some((apt: any) => apt.start_time === startTime)
 
         // Only add slot if it's not booked and not during break
         if (!isBooked && !isDuringBreak) {
@@ -554,8 +565,8 @@ export async function getAvailableSlots(doctorId: string, date: string) {
         }
 
         // Move to next slot
-        currentMinute += 30
-        if (currentMinute >= 60) {
+        currentMinute += slotDuration
+        while (currentMinute >= 60) {
             currentMinute -= 60
             currentHour += 1
         }
@@ -605,7 +616,11 @@ export async function createAppointmentRequest(formData: FormData) {
                 notes: notes || null,
                 status: 'pending',
                 linked_appointment_id: previousAppointmentId || null,
-                treatment_plan_step_id: formData.get('stepId') ? String(formData.get('stepId')) : null
+                treatment_plan_step_id: formData.get('stepId') ? String(formData.get('stepId')) : null,
+                // Note: Appointment Requests table also needs session columns if we want to track it there?
+                // Migration didn't add them to appointment_requests.
+                // Assuming we fetch it again on approval OR simplistic approach for now.
+                // Let's stick to core appointments table modification for now as per plan.
             })
 
         if (error) {

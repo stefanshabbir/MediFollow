@@ -26,9 +26,10 @@ interface ConsultationNotesProps {
         content: string | null
         status: string
     } | null
+    appointmentId?: string
 }
 
-export function ConsultationNotes({ patientId, initialData }: ConsultationNotesProps) {
+export function ConsultationNotes({ patientId, initialData, appointmentId }: ConsultationNotesProps) {
     const router = useRouter()
     const [content, setContent] = useState(initialData?.content || '')
     const [status, setStatus] = useState(initialData?.status || 'draft')
@@ -45,7 +46,8 @@ export function ConsultationNotes({ patientId, initialData }: ConsultationNotesP
             if (!currentContent.trim()) return
 
             setIsSaving(true)
-            const result = await saveNoteDraft(currentRecordId, currentContent, patientId)
+            setIsSaving(true)
+            const result = await saveNoteDraft(currentRecordId, currentContent, patientId, appointmentId)
             setIsSaving(false)
 
             if (result.success) {
@@ -57,7 +59,7 @@ export function ConsultationNotes({ patientId, initialData }: ConsultationNotesP
                 toast.error(result.error || 'Failed to autosave')
             }
         },
-        [patientId]
+        [patientId, appointmentId]
     )
 
     // Debounce effect

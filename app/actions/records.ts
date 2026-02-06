@@ -136,7 +136,7 @@ export async function getPatientRecords(patientId: string) {
     return { data: recordsWithUrls }
 }
 
-export async function saveNoteDraft(recordId: string | null, content: string, patientId: string) {
+export async function saveNoteDraft(recordId: string | null, content: string, patientId: string, appointmentId?: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Unauthorized' }
@@ -183,6 +183,7 @@ export async function saveNoteDraft(recordId: string | null, content: string, pa
                 doctor_id: user.id,
                 content,
                 status: 'draft',
+                appointment_id: appointmentId || null
                 // file_url and file_name are null
             })
             .select('id')

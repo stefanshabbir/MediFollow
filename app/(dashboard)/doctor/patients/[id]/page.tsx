@@ -13,8 +13,9 @@ import { notFound } from 'next/navigation'
 import { ConsultationNotes } from '@/components/consultation-notes'
 import { PatientTreatmentPlanManager } from '@/components/doctor/PatientTreatmentPlanManager'
 
-export default async function PatientDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PatientDetailsPage({ params, searchParams }: { params: Promise<{ id: string }>, searchParams: Promise<{ appointmentId?: string }> }) {
     const { id } = await params
+    const { appointmentId } = await searchParams
     const { data: profile, error: profileError } = await getPatientProfile(id)
 
     if (profileError || !profile) {
@@ -72,6 +73,7 @@ export default async function PatientDetailsPage({ params }: { params: Promise<{
                     content: activeDraft.content,
                     status: activeDraft.status
                 } : null}
+                appointmentId={appointmentId}
             />
 
             <div className="grid gap-6 lg:grid-cols-3">

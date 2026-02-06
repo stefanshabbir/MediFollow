@@ -16,6 +16,16 @@ import Link from "next/link"
 import { useDebounce } from "@/hooks/use-debounce"
 import { Loader2, User, Clock, CalendarIcon, FilterX } from "lucide-react"
 
+const SPECIALIZATIONS = [
+    "General Practice",
+    "Cardiology",
+    "Dermatology",
+    "Pediatrics",
+    "Neurology",
+    "Orthopedics",
+    "Psychiatry"
+]
+
 function BookAppointmentForm() {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -36,6 +46,7 @@ function BookAppointmentForm() {
     const [searchQuery, setSearchQuery] = useState("")
     const debouncedSearch = useDebounce(searchQuery, 300)
     const [selectedFilterOrg, setSelectedFilterOrg] = useState<string>("all")
+    const [selectedSpecialization, setSelectedSpecialization] = useState<string>("all")
     const [feeRange, setFeeRange] = useState([0, 1000000]) // Default to max (no filter)
     const debouncedFeeRange = useDebounce(feeRange, 500) // Debounce slider for API calls if we were doing server filtering on slide. 
     // Wait, getDoctors logic is server side. We should fetch doctors based on filters OR fetch all and filter client side?
@@ -78,6 +89,7 @@ function BookAppointmentForm() {
                 const filters: any = {
                     search: debouncedSearch,
                     organisationId: selectedFilterOrg !== "all" ? selectedFilterOrg : undefined,
+                    specialization: selectedSpecialization !== "all" ? selectedSpecialization : undefined,
                     minFee: debouncedFeeRange[0],
                     // If max is 1,000,000, we treat it as "no limit"
                     maxFee: debouncedFeeRange[1] === 1000000 ? undefined : debouncedFeeRange[1],
@@ -113,7 +125,7 @@ function BookAppointmentForm() {
 
         // Trigger fetch when any filter changes
         fetchDoctors()
-    }, [debouncedSearch, selectedFilterOrg, debouncedFeeRange, availableOnly, isFollowUp, preselectedDoctorId])
+    }, [debouncedSearch, selectedFilterOrg, selectedSpecialization, debouncedFeeRange, availableOnly, isFollowUp, preselectedDoctorId])
 
     // Load Slots
     useEffect(() => {
@@ -172,6 +184,7 @@ function BookAppointmentForm() {
     const resetFilters = () => {
         setSearchQuery("")
         setSelectedFilterOrg("all")
+        setSelectedSpecialization("all")
         setFeeRange([0, 20000])
         setAvailableOnly(false)
     }
@@ -200,6 +213,22 @@ function BookAppointmentForm() {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
+                        </div>
+
+                        {/* Specialization */}
+                        <div className="space-y-2">
+                            <Label>Specialization</Label>
+                            <Select value={selectedSpecialization} onValueChange={setSelectedSpecialization}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="All Specializations" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Specializations</SelectItem>
+                                    {SPECIALIZATIONS.map(spec => (
+                                        <SelectItem key={spec} value={spec}>{spec}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         {/* Organisation */}
@@ -290,7 +319,7 @@ function BookAppointmentForm() {
                                 <CardContent className="text-sm space-y-2">
                                     <div className="flex items-center text-muted-foreground">
                                         <User className="mr-2 h-4 w-4" />
-                                        <span>General Practitioner</span> {/* Placeholder for specialty if not in schema yet */}
+                                        <span>{doctor.specialization || "General Practitioner"}</span>
                                     </div>
                                     <div className="font-semibold">
                                         {(doctor.fee_cents / 100).toLocaleString('en-LK', { style: 'currency', currency: 'LKR' })}
