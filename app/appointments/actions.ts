@@ -62,7 +62,7 @@ export async function createAppointment(formData: FormData) {
             start_time: startTime,
             end_time: endTime,
             notes: notes || null,
-            status: 'pending',
+            status: 'confirmed',
             payment_status: 'pending',
             payment_amount_cents: doctorProfile.fee_cents ?? 0,
             currency: 'LKR',

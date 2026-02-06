@@ -187,7 +187,8 @@ export function RegisterForm() {
 
           <Button
             type="submit"
-            disabled={isPending || !formIsValid}
+            isLoading={isPending}
+            disabled={!formIsValid}
             className="w-full h-11 text-base font-medium"
           >
             {isPending ? "Creating account..." : "Create account"}

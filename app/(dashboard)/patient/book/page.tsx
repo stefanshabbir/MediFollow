@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { getDoctors, getAvailableSlots, createAppointmentRequest, getOrganisations } from "@/app/appointments/actions"
+import { getDoctors, getAvailableSlots, createAppointment, getOrganisations } from "@/app/appointments/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -168,7 +168,7 @@ function BookAppointmentForm() {
         }
 
         try {
-            const result = await createAppointmentRequest(formData)
+            const result = await createAppointment(formData)
             if (result.error) toast.error(result.error)
             else {
                 toast.success(result.success)
@@ -398,15 +398,10 @@ function BookAppointmentForm() {
                                 size="lg"
                                 className="w-full"
                                 onClick={handleBooking}
-                                disabled={isSubmitting || !selectedSlot}
+                                isLoading={isSubmitting}
+                                disabled={!selectedSlot}
                             >
-                                {isSubmitting ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Confirming...
-                                    </>
-                                ) : (
-                                    "Confirm Appointment Request"
-                                )}
+                                {isSubmitting ? "Confirming..." : "Confirm Appointment"}
                             </Button>
                         </CardContent>
                     </Card>
