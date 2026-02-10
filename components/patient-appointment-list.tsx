@@ -1,7 +1,7 @@
 
 import { AppointmentNode, buildAppointmentTree } from '@/utils/appointment-utils'
 import { StatusBadge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import Link from 'next/link'
 import { CancelAppointmentButton } from '@/components/cancel-appointment-button'
 import { ChevronRight, CornerDownRight, CreditCard } from 'lucide-react'
@@ -76,22 +76,24 @@ function AppointmentNodeItem({ node, type, depth = 0 }: { node: AppointmentNode,
 
                     {/* Actions */}
                     {isPast ? (
-                        <Button asChild size="sm" variant="outline">
-                            <Link href={`/patient/book?doctorId=${node.doctor_id}&previousAppointmentId=${node.id}`}>
-                                Book Follow-up
-                            </Link>
-                        </Button>
+                        <Link
+                            href={`/patient/book?doctorId=${node.doctor_id}&previousAppointmentId=${node.id}`}
+                            className={buttonVariants({ size: "sm", variant: "outline" })}
+                        >
+                            Book Follow-up
+                        </Link>
                     ) : (
                         <CancelAppointmentButton id={node.id} />
                     )}
 
                     {!isPast && (node.status === 'confirmed' || node.status === 'awaiting_payment') && node.payment_status !== 'paid' && (
-                        <Button asChild size="sm" className="gap-2">
-                            <Link href={`/patient/checkout?appointmentId=${node.id}`}>
-                                <CreditCard className="h-4 w-4" />
-                                Pay Now
-                            </Link>
-                        </Button>
+                        <Link
+                            href={`/patient/checkout?appointmentId=${node.id}`}
+                            className={cn(buttonVariants({ size: "sm" }), "gap-2")}
+                        >
+                            <CreditCard className="h-4 w-4" />
+                            Pay Now
+                        </Link>
                     )}
                 </div>
             </div>
@@ -122,9 +124,9 @@ export function PatientAppointmentList({ appointments, type }: PatientAppointmen
                     <p className="text-sm text-muted-foreground mb-4">
                         You have no upcoming appointments. Book your first appointment to get started.
                     </p>
-                    <Button asChild variant="outline">
-                        <Link href="/patient/book">Book Appointment</Link>
-                    </Button>
+                    <Link href="/patient/book" className={buttonVariants({ variant: "outline" })}>
+                        Book Appointment
+                    </Link>
                 </div>
             )
         }

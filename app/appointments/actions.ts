@@ -18,92 +18,146 @@ import {
 } from '@/lib/email-templates'
 
 export async function createAppointment(formData: FormData) {
-    const supabase = await createClient()
+    try {
+        const supabase = await createClient()
 
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+            return { error: 'Unauthorized' }
+        }
+
+        const doctorId = formData.get('doctorId') as string
+        const appointmentDate = formData.get('appointmentDate') as string
+        const startTime = formData.get('startTime') as string
+        const endTime = formData.get('endTime') as string
+        const notes = formData.get('notes') as string
+        const previousAppointmentId = formData.get('previousAppointmentId') as string
+
+        // Get doctor's organisation_id and fee
+        const { data: doctorProfile, error: profileError } = await supabase
+            .from('profiles')
+            .select('organisation_id, fee_cents')
+            .eq('id', doctorId)
+            .single()
+
+        if (profileError || !doctorProfile) {
+            console.error("Profile Error:", profileError)
+            return { error: 'Doctor not found or profile error: ' + (profileError?.message || 'Unknown') }
+        }
+
+        // Find session for this appointment
+        const { data: session } = await supabase
+            .from('doctor_sessions')
+            .select('id, label')
+            .eq('doctor_id', doctorId)
+            .eq('date', appointmentDate)
+            .eq('status', 'active')
+            .single()
+
+        const { error } = await supabase
+            .from('appointments')
+            .insert({
+                patient_id: user.id,
+                doctor_id: doctorId,
+                organisation_id: doctorProfile.organisation_id,
+                appointment_date: appointmentDate,
+                start_time: startTime,
+                end_time: endTime,
+                notes: notes || null,
+                status: 'confirmed',
+                payment_status: 'pending',
+                payment_amount_cents: doctorProfile.fee_cents ?? 0,
+                currency: 'LKR',
+                previous_appointment_id: previousAppointmentId || null,
+                session_id: session?.id || null,
+                session_label: session?.label || null
+            })
+
+        if (error) {
+            console.error("Insert Appointment Error:", error)
+            return { error: "Database Error: " + error.message }
+        }
+
+        // Send confirmation email to patient (Non-blocking)
+        if (user.email && doctorProfile) {
+            console.log('[CreateAppointment] Attempting to send email to', user.email)
+            // Fetch doctor's name for email
+            const { data: doctor } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('id', doctorId)
+                .single()
+
+            // Process email in background/safe block to avoid blocking the user response
+            try {
+                await sendEmail({
+                    to: user.email,
+                    subject: 'Appointment Confirmation - MediFollow',
+                    text: `Your appointment with ${doctor?.full_name} on ${appointmentDate} at ${startTime} has been booked.`,
+                    html: getAppointmentConfirmationEmail(
+                        user.user_metadata?.full_name || 'Patient',
+                        doctor?.full_name || 'Doctor',
+                        appointmentDate,
+                        startTime
+                    )
+                })
+            } catch (emailError) {
+                console.error("[CreateAppointment] Email sending failed (Non-critical):", emailError)
+                // Continue execution - do not fail the booking
+            }
+        }
+
+        revalidatePath('/patient')
+        return { success: 'Appointment booked successfully!' }
+    } catch (err: any) {
+        console.error("createAppointment Unexpected Error:", err)
+        return { error: "Server Error: " + (err.message || String(err)) }
+    }
+    revalidatePath('/patient')
+    return { success: 'Appointment booked successfully!' }
+}
+
+export async function submitConsultation(formData: FormData) {
+    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
+
     if (!user) {
         return { error: 'Unauthorized' }
     }
 
-    const doctorId = formData.get('doctorId') as string
-    const appointmentDate = formData.get('appointmentDate') as string
-    const startTime = formData.get('startTime') as string
-    const endTime = formData.get('endTime') as string
-    const notes = formData.get('notes') as string
-    const previousAppointmentId = formData.get('previousAppointmentId') as string
+    const appointmentId = formData.get('appointmentId') as string
+    const consultationNotes = formData.get('consultationNotes') as string
+    const diagnosis = formData.get('diagnosis') as string
+    // const prescriptions = formData.get('prescriptions') as string
 
-    // Get doctor's organisation_id and fee
-    const { data: doctorProfile } = await supabase
-        .from('profiles')
-        .select('organisation_id, fee_cents')
-        .eq('id', doctorId)
+    // Verify ownership (doctor)
+    const { data: appointment } = await supabase
+        .from('appointments')
+        .select('doctor_id')
+        .eq('id', appointmentId)
         .single()
 
-    if (!doctorProfile) {
-        return { error: 'Doctor not found' }
+    if (!appointment || appointment.doctor_id !== user.id) {
+        return { error: 'Unauthorized: You can only consult on your own appointments.' }
     }
-
-    // Find session for this appointment
-    const { data: session } = await supabase
-        .from('doctor_sessions')
-        .select('id, label')
-        .eq('doctor_id', doctorId)
-        .eq('date', appointmentDate)
-        .eq('status', 'active')
-        .single()
 
     const { error } = await supabase
         .from('appointments')
-        .insert({
-            patient_id: user.id,
-            doctor_id: doctorId,
-            organisation_id: doctorProfile.organisation_id,
-            appointment_date: appointmentDate,
-            start_time: startTime,
-            end_time: endTime,
-            notes: notes || null,
-            status: 'confirmed',
-            payment_status: 'pending',
-            payment_amount_cents: doctorProfile.fee_cents ?? 0,
-            currency: 'LKR',
-            previous_appointment_id: previousAppointmentId || null,
-            session_id: session?.id || null,
-            session_label: session?.label || null
+        .update({
+            consultation_notes: consultationNotes,
+            diagnosis: diagnosis,
+            status: 'completed'
         })
-
-
+        .eq('id', appointmentId)
 
     if (error) {
-        return { error: error.message }
+        console.error("submitConsultation Error:", error)
+        return { error: "Failed to save consultation: " + error.message }
     }
 
-    console.log('[CreateAppointment] User email:', user.email, 'Doctor ID:', doctorId)
-
-    // Send confirmation email to patient
-    if (user.email && doctorProfile) {
-        console.log('[CreateAppointment] Attempting to send email to', user.email)
-        // Fetch doctor's name for email
-        const { data: doctor } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', doctorId)
-            .single()
-
-        await sendEmail({
-            to: user.email,
-            subject: 'Appointment Confirmation - MediFollow',
-            text: `Your appointment with ${doctor?.full_name} on ${appointmentDate} at ${startTime} has been booked.`,
-            html: getAppointmentConfirmationEmail(
-                user.user_metadata?.full_name || 'Patient',
-                doctor?.full_name || 'Doctor',
-                appointmentDate,
-                startTime
-            )
-        })
-    }
-
+    revalidatePath('/doctor')
     revalidatePath('/patient')
-    return { success: 'Appointment booked successfully!' }
+    return { success: 'Consultation saved and appointment completed!' }
 }
 
 export async function scheduleFollowUp(formData: FormData) {
@@ -502,8 +556,35 @@ export async function getAvailableSlots(doctorId: string, date: string) {
         console.error("getAvailableSlots Error (Session):", sessionError)
     }
 
-    // If no session exists for this day, return empty slots
-    if (!sessionData) {
+    // If no session exists for this day, try to get from doctor_schedules (weekly template)
+    let activeSession = sessionData
+
+    if (!activeSession) {
+        const { data: scheduleData, error: scheduleError } = await supabaseAdmin
+            .from('doctor_schedules')
+            .select('*')
+            .eq('doctor_id', doctorId)
+            .eq('day_of_week', dayOfWeek)
+            .eq('is_available', true)
+            .single()
+
+        if (scheduleError && scheduleError.code !== 'PGRST116') {
+            console.error("getAvailableSlots Error (Schedule):", scheduleError)
+        }
+
+        if (scheduleData) {
+            // Create a temporary session object from the schedule
+            activeSession = {
+                start_time: scheduleData.start_time,
+                end_time: scheduleData.end_time,
+                slot_duration_minutes: 15, // Default duration if not specified
+                // We might want to fetch default duration from profile if available, but 15 is safe default
+            }
+            // Optimization: We could also check break times here if needed
+        }
+    }
+
+    if (!activeSession) {
         return { data: [] }
     }
 
@@ -520,11 +601,11 @@ export async function getAvailableSlots(doctorId: string, date: string) {
     }
 
     // Parse doctor's session hours
-    const startHour = parseInt(sessionData.start_time.split(':')[0])
-    const startMinute = parseInt(sessionData.start_time.split(':')[1])
-    const endHour = parseInt(sessionData.end_time.split(':')[0])
-    const endMinute = parseInt(sessionData.end_time.split(':')[1])
-    const slotDuration = sessionData.slot_duration_minutes || 15
+    const startHour = parseInt(activeSession.start_time.split(':')[0])
+    const startMinute = parseInt(activeSession.start_time.split(':')[1])
+    const endHour = parseInt(activeSession.end_time.split(':')[0])
+    const endMinute = parseInt(activeSession.end_time.split(':')[1])
+    const slotDuration = activeSession.slot_duration_minutes || 15
 
     // No break times in session model for now (or could add later)
     let breakStart: { hour: number, minute: number } | null = null

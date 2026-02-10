@@ -1,8 +1,9 @@
 import { getDoctorPatients } from '@/app/actions/records'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import Link from 'next/link'
 import { User } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export default async function PatientsPage() {
     const { data: patients, error } = await getDoctorPatients()
@@ -52,11 +53,9 @@ export default async function PatientsPage() {
                                         </div>
                                     </div>
                                     <div className="px-6 pb-6 pt-0">
-                                        <Button asChild className="w-full">
-                                            <Link href={`/doctor/patients/${patient.id}`}>
-                                                View Records
-                                            </Link>
-                                        </Button>
+                                        <Link href={`/doctor/patients/${patient.id}`} className={cn(buttonVariants(), "w-full")}>
+                                            View Records
+                                        </Link>
                                     </div>
                                 </Card>
                             ))}

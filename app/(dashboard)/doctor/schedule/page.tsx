@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { getDoctorSchedule, updateDoctorSchedule } from '@/app/schedule/actions'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -76,9 +76,9 @@ export default function DoctorSchedulePage() {
                         Set your working hours and availability
                     </p>
                 </div>
-                <Button asChild>
-                    <Link href="/doctor">Back to Dashboard</Link>
-                </Button>
+                <Link href="/doctor" className={buttonVariants()}>
+                    Back to Dashboard
+                </Link>
             </div>
 
             <Card>

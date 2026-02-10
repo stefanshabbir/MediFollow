@@ -21,7 +21,10 @@ export async function getDoctorSessions(doctorId?: string, startDate?: string, e
 
     let query = supabase
         .from('doctor_sessions')
-        .select('*')
+        .select(`
+            *,
+            appointments:appointments(count)
+        `)
         .eq('doctor_id', targetDoctorId)
         .order('date', { ascending: true })
         .order('start_time', { ascending: true })
@@ -40,7 +43,13 @@ export async function getDoctorSessions(doctorId?: string, startDate?: string, e
         return { error: error.message }
     }
 
-    return { data }
+    // Transform data to flatten the count
+    const sessionsWithCount = data.map((session: any) => ({
+        ...session,
+        appointment_count: session.appointments?.[0]?.count || 0
+    }))
+
+    return { data: sessionsWithCount }
 }
 
 export async function createSession(formData: FormData) {

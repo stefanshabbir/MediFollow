@@ -3,7 +3,7 @@ import { getAppointments } from '@/app/appointments/actions'
 import { MedicalRecordUpload } from '@/components/medical-record-upload'
 import { MedicalRecordsList } from '@/components/medical-records-list'
 import { DoctorAppointmentList } from '@/components/doctor-appointment-list'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/utils/supabase/server'
 import { ArrowLeft, User } from 'lucide-react'
@@ -55,11 +55,9 @@ export default async function PatientDetailsPage({ params, searchParams }: { par
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" asChild>
-                    <Link href="/doctor/patients">
-                        <ArrowLeft className="h-5 w-5" />
-                    </Link>
-                </Button>
+                <Link href="/doctor/patients" className={buttonVariants({ variant: "ghost", size: "icon" })}>
+                    <ArrowLeft className="h-5 w-5" />
+                </Link>
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">{profile.full_name}</h1>
                     <p className="text-muted-foreground">Patient Details</p>

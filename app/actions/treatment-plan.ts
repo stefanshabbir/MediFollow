@@ -174,10 +174,24 @@ export async function getPatientTreatmentPlans(patientId: string) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Unauthorized' }
 
-    // Check access permissions (simplified for now, ideally verify relationship)
+    // Fetch profile to verify role
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+    // Strictly deny admins
+    if (profile?.role === 'admin') {
+        return { error: 'Admins are not authorized to view treatment plans' }
+    }
+
+    // Check access permissions
     if (user.id !== patientId) {
         // If not the patient, must be a doctor
-        // In a real app we'd check if this doctor has access to this patient
+        if (profile?.role !== 'doctor') {
+            return { error: 'Unauthorized' }
+        }
     }
 
     const { data, error } = await supabase

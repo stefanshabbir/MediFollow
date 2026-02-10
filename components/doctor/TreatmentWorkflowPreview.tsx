@@ -2,10 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { CalendarClock, ArrowDown, CheckCircle2, Clock, Calendar } from "lucide-react"
 import { type TreatmentTemplate, type TreatmentTemplateStep, type TreatmentPlanAppointment } from "@/app/actions/treatment-plan"
 import Link from "next/link"
+import { cn } from "@/lib/utils"
 
 interface TreatmentWorkflowPreviewProps {
     template: TreatmentTemplate & { steps: TreatmentTemplateStep[] }
@@ -56,12 +57,13 @@ export function TreatmentWorkflowPreview({ template, planAppointments, isPatient
                                         </Badge>
 
                                         {isPatient && status === 'pending' && (
-                                            <Button size="sm" asChild className="bg-primary hover:bg-primary/90 text-white shadow-sm">
-                                                <Link href={`/patient/book?type=${step.appointment_type}&reason=${encodeURIComponent(step.title)}&stepId=${step.id}${doctorId ? `&doctorId=${doctorId}` : ''}`}>
-                                                    <Calendar className="mr-2 h-3 w-3" />
-                                                    Book Appointment
-                                                </Link>
-                                            </Button>
+                                            <Link
+                                                href={`/patient/book?type=${step.appointment_type}&reason=${encodeURIComponent(step.title)}&stepId=${step.id}${doctorId ? `&doctorId=${doctorId}` : ''}`}
+                                                className={cn(buttonVariants({ size: "sm" }), "bg-primary hover:bg-primary/90 text-white shadow-sm")}
+                                            >
+                                                <Calendar className="mr-2 h-3 w-3" />
+                                                Book Appointment
+                                            </Link>
                                         )}
                                         {/* If scheduled, show date maybe? Need to fetch appt details for that. 
                                             For now, just showing status is good. */}
