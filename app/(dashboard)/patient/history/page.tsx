@@ -4,7 +4,7 @@ import { MedicalRecordsList } from '@/components/medical-records-list'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Button } from '@/components/ui/button' // For clear filters (Link?) or button
+import { Button, buttonVariants } from '@/components/ui/button' // For clear filters (Link?) or button
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -129,9 +129,9 @@ export default async function PatientHistoryPage(props: { searchParams: Promise<
                             </select>
                         </div>
                         <Button type="submit" size="sm" variant="secondary">Filter</Button>
-                        <Button asChild size="sm" variant="ghost">
-                            <Link href="/patient/history">Reset</Link>
-                        </Button>
+                        <Link href="/patient/history" className={buttonVariants({ size: "sm", variant: "ghost" })}>
+                            Reset
+                        </Link>
                     </form>
                 </div>
 

@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { FileText, Download, ExternalLink, StickyNote } from 'lucide-react'
 import { format } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
@@ -74,12 +74,15 @@ export function MedicalRecordsList({ records }: MedicalRecordsListProps) {
                             </div>
                             <div className="flex gap-2">
                                 {record.signedUrl ? (
-                                    <Button asChild variant="outline" size="sm">
-                                        <a href={record.signedUrl} target="_blank" rel="noopener noreferrer">
-                                            <ExternalLink className="h-4 w-4 mr-2" />
-                                            View File
-                                        </a>
-                                    </Button>
+                                    <a
+                                        href={record.signedUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={buttonVariants({ variant: "outline", size: "sm" })}
+                                    >
+                                        <ExternalLink className="h-4 w-4 mr-2" />
+                                        View File
+                                    </a>
                                 ) : record.content ? (
                                     <Dialog>
                                         <DialogTrigger asChild>

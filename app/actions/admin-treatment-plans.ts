@@ -25,7 +25,7 @@ export type TemplateStepInput = {
 
 // --- Admin Actions ---
 
-async function verifyAdmin() {
+async function verifyAdminOrDoctor() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -37,12 +37,15 @@ async function verifyAdmin() {
         .eq('id', user.id)
         .single()
 
-    if (profile?.role !== 'admin') {
-        return { error: 'Only admins can perform this action', supabase: null, user: null }
+    if (profile?.role !== 'admin' && profile?.role !== 'doctor') {
+        return { error: 'Unauthorized: Only admins and doctors can perform this action', supabase: null, user: null }
     }
 
     return { error: null, supabase, user }
 }
+
+// Rename verifyAdmin to verifyAdminOrDoctor throughout the file or alias it
+const verifyAccess = verifyAdminOrDoctor
 
 // --- Diagnoses ---
 
@@ -58,7 +61,7 @@ export async function getAllDiagnoses() {
 }
 
 export async function createDiagnosis(input: DiagnosisInput) {
-    const { error: authError, supabase } = await verifyAdmin()
+    const { error: authError, supabase } = await verifyAdminOrDoctor()
     if (authError || !supabase) return { error: authError }
 
     const { data, error } = await supabase
@@ -74,7 +77,7 @@ export async function createDiagnosis(input: DiagnosisInput) {
 }
 
 export async function updateDiagnosis(id: string, input: DiagnosisInput) {
-    const { error: authError, supabase } = await verifyAdmin()
+    const { error: authError, supabase } = await verifyAdminOrDoctor()
     if (authError || !supabase) return { error: authError }
 
     const { error } = await supabase
@@ -89,7 +92,7 @@ export async function updateDiagnosis(id: string, input: DiagnosisInput) {
 }
 
 export async function deleteDiagnosis(id: string) {
-    const { error: authError, supabase } = await verifyAdmin()
+    const { error: authError, supabase } = await verifyAdminOrDoctor()
     if (authError || !supabase) return { error: authError }
 
     const { error } = await supabase.from('diagnoses').delete().eq('id', id)
@@ -125,7 +128,7 @@ export async function getTemplatesForDiagnosis(diagnosisId: string) {
 }
 
 export async function createTemplate(input: TemplateInput) {
-    const { error: authError, supabase } = await verifyAdmin()
+    const { error: authError, supabase } = await verifyAdminOrDoctor()
     if (authError || !supabase) return { error: authError }
 
     const { data, error } = await supabase
@@ -145,7 +148,7 @@ export async function createTemplate(input: TemplateInput) {
 }
 
 export async function deleteTemplate(id: string) {
-    const { error: authError, supabase } = await verifyAdmin()
+    const { error: authError, supabase } = await verifyAdminOrDoctor()
     if (authError || !supabase) return { error: authError }
 
     const { error } = await supabase.from('treatment_templates').delete().eq('id', id)
@@ -159,7 +162,7 @@ export async function deleteTemplate(id: string) {
 // --- Template Steps ---
 
 export async function addTemplateStep(input: TemplateStepInput) {
-    const { error: authError, supabase } = await verifyAdmin()
+    const { error: authError, supabase } = await verifyAdminOrDoctor()
     if (authError || !supabase) return { error: authError }
 
     const { data, error } = await supabase
@@ -181,7 +184,7 @@ export async function addTemplateStep(input: TemplateStepInput) {
 }
 
 export async function deleteTemplateStep(id: string) {
-    const { error: authError, supabase } = await verifyAdmin()
+    const { error: authError, supabase } = await verifyAdminOrDoctor()
     if (authError || !supabase) return { error: authError }
 
     const { error } = await supabase.from('treatment_template_steps').delete().eq('id', id)

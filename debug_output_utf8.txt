@@ -1,0 +1,21 @@
+﻿Checking doctor_schedules table...
+Found 14 schedules.
+Sample schedule: {
+  id: 'c9a0a5c2-c977-4304-a428-4157d3e605b8',
+  doctor_id: '96dd00f3-4556-4357-8dc1-557dc692b914',
+  day_of_week: 1,
+  is_available: true,
+  start_time: '09:00:00',
+  end_time: '17:00:00',
+  break_start_time: null,
+  break_end_time: null,
+  created_at: '2026-02-04T15:18:19.31235+00:00',
+  updated_at: '2026-02-04T15:18:19.31235+00:00'
+}
+Schedules by day_of_week: { '0': 2, '1': 2, '2': 2, '3': 2, '4': 2, '5': 2, '6': 2 }
+Found 4 doctors.
+Sample Doctor ID: 5361258d-9d27-4b7d-9a21-4f07c444cc1f
+Does this doctor have a schedule? false
+Environment Timezone Offset: -330
+Current Date (Local): Tue Feb 10 2026 11:40:43 GMT+0530 (India Standard Time)
+Day of week for 2023-10-27 (Friday): 5

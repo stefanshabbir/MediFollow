@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+
+export const dynamic = "force-dynamic";
 
 export default function CheckoutSuccessPage() {
   return (
@@ -11,12 +13,12 @@ export default function CheckoutSuccessPage() {
           <CardDescription>Your appointment has been confirmed. You can view details in your dashboard.</CardDescription>
         </CardHeader>
         <CardContent className="flex gap-3">
-          <Button asChild>
-            <Link href="/patient">Back to dashboard</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/patient/book">Book another appointment</Link>
-          </Button>
+          <Link href="/patient" className={buttonVariants()}>
+            Back to dashboard
+          </Link>
+          <Link href="/patient/book" className={buttonVariants({ variant: "outline" })}>
+            Book another appointment
+          </Link>
         </CardContent>
       </Card>
     </div>

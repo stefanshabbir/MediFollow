@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 import { getAppointments, getAppointmentRequests } from '@/app/appointments/actions'
@@ -28,13 +28,20 @@ export default async function PatientDashboard() {
 
 
 
-  const upcomingAppointments = appointments?.filter((apt: any) =>
-    new Date(apt.appointment_date) >= new Date() && apt.status !== 'cancelled'
-  ).sort((a: any, b: any) => new Date(a.appointment_date + 'T' + a.start_time).getTime() - new Date(b.appointment_date + 'T' + b.start_time).getTime()) || []
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
 
-  const pastAppointments = appointments?.filter((apt: any) =>
-    new Date(apt.appointment_date) < new Date() || apt.status === 'completed'
-  ) || []
+  const upcomingAppointments = appointments?.filter((apt: any) => {
+    const aptDate = new Date(apt.appointment_date)
+    aptDate.setHours(0, 0, 0, 0)
+    return aptDate >= today && apt.status !== 'cancelled' && apt.status !== 'completed'
+  }).sort((a: any, b: any) => new Date(a.appointment_date + 'T' + a.start_time).getTime() - new Date(b.appointment_date + 'T' + b.start_time).getTime()) || []
+
+  const pastAppointments = appointments?.filter((apt: any) => {
+    const aptDate = new Date(apt.appointment_date)
+    aptDate.setHours(0, 0, 0, 0)
+    return aptDate < today || apt.status === 'completed'
+  }) || []
 
   return (
     <div className="space-y-8">
@@ -46,9 +53,9 @@ export default async function PatientDashboard() {
             Welcome, {profile?.full_name}
           </p>
         </div>
-        <Button asChild size="lg">
-          <Link href="/patient/book">Request Appointment</Link>
-        </Button>
+        <Link href="/patient/book" className={buttonVariants({ size: "lg" })}>
+          Request Appointment
+        </Link>
       </div>
 
       {/* Metrics Cards */}

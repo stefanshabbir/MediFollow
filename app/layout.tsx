@@ -47,10 +47,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <main className="min-h-screen bg-background">
-            {children}
-          </main>
-          <Toaster />
+          <>
+            <main className="min-h-screen bg-background">
+              {children}
+            </main>
+            <Toaster />
+          </>
         </ThemeProvider>
       </body>
     </html>

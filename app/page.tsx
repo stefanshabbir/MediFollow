@@ -1,6 +1,9 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { cn } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
 
 export default function Home() {
   return (
@@ -18,12 +21,12 @@ export default function Home() {
           </Link>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/login">Sign In</Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/register">Get Started</Link>
-            </Button>
+            <Link href="/login" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+              Sign In
+            </Link>
+            <Link href="/register" className={buttonVariants({ size: "sm" })}>
+              Get Started
+            </Link>
           </div>
         </div>
       </header>
@@ -52,12 +55,12 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Button asChild size="lg" className="min-w-[200px]">
-              <Link href="/register">Get Started Free</Link>
-            </Button>
-            <Button asChild variant="outline" size="lg" className="min-w-[200px]">
-              <Link href="/login">Sign In</Link>
-            </Button>
+            <Link href="/register" className={cn(buttonVariants({ size: "lg" }), "min-w-[200px]")}>
+              Get Started Free
+            </Link>
+            <Link href="/login" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "min-w-[200px]")}>
+              Sign In
+            </Link>
           </div>
 
           <p className="text-sm text-muted-foreground">
@@ -152,12 +155,12 @@ export default function Home() {
             Join thousands of users managing their healthcare with MediFollow
           </p>
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button asChild size="lg" className="min-w-[180px] bg-white text-primary hover:bg-white/90">
-              <Link href="/register">Create Free Account</Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="min-w-[180px] border-2 border-white bg-transparent text-white hover:bg-white hover:text-primary">
-              <Link href="/login">Sign In</Link>
-            </Button>
+            <Link href="/register" className={cn(buttonVariants({ size: "lg" }), "min-w-[180px] bg-white text-primary hover:bg-white/90")}>
+              Create Free Account
+            </Link>
+            <Link href="/login" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "min-w-[180px] border-2 border-white bg-transparent text-white hover:bg-white hover:text-primary")}>
+              Sign In
+            </Link>
           </div>
         </div>
       </div>

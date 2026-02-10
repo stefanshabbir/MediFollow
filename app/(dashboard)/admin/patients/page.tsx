@@ -1,7 +1,8 @@
 
 import { getOrganisationPatients } from '@/app/actions/records'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { User } from 'lucide-react'
 
@@ -53,11 +54,9 @@ export default async function AdminPatientsPage() {
                                         </div>
                                     </div>
                                     <div className="px-6 pb-6 pt-0">
-                                        <Button asChild className="w-full">
-                                            <Link href={`/admin/patients/${patient.id}`}>
-                                                View Records
-                                            </Link>
-                                        </Button>
+                                        <Link href={`/admin/patients/${patient.id}`} className={cn(buttonVariants(), "w-full")}>
+                                            View Records
+                                        </Link>
                                     </div>
                                 </Card>
                             ))}

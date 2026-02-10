@@ -3,7 +3,7 @@ import { getPatientProfile, getPatientRecords } from '@/app/actions/records'
 import { getAppointments } from '@/app/appointments/actions'
 import { MedicalRecordUpload } from '@/components/medical-record-upload'
 import { MedicalRecordsList } from '@/components/medical-records-list'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft, User } from 'lucide-react'
 import Link from 'next/link'
@@ -30,11 +30,9 @@ export default async function AdminPatientDetailsPage({ params }: { params: Prom
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" asChild>
-                    <Link href="/admin/patients">
-                        <ArrowLeft className="h-5 w-5" />
-                    </Link>
-                </Button>
+                <Link href="/admin/patients" className={buttonVariants({ variant: "ghost", size: "icon" })}>
+                    <ArrowLeft className="h-5 w-5" />
+                </Link>
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">{profile.full_name}</h1>
                     <p className="text-muted-foreground">Patient Details (Admin View)</p>

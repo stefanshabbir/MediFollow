@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AppointmentRequestsTable } from '@/components/appointment-requests-table'
 import { getAppointmentRequests } from '@/app/appointments/actions'
@@ -34,9 +35,9 @@ export default async function AdminDashboard() {
             Welcome back, {profile?.full_name}
           </p>
         </div>
-        <Button asChild size="lg">
-          <Link href="/admin/invite">Invite Doctor</Link>
-        </Button>
+        <Link href="/admin/invite" className={buttonVariants({ size: "lg" })}>
+          Invite Doctor
+        </Link>
       </div>
 
       {/* Metrics Cards */}
@@ -100,9 +101,9 @@ export default async function AdminDashboard() {
               Browse patients and manage medical records
             </CardDescription>
           </div>
-          <Button asChild>
-            <Link href="/admin/patients">View All Patients</Link>
-          </Button>
+          <Link href="/admin/patients" className={buttonVariants()}>
+            View All Patients
+          </Link>
         </CardHeader>
       </Card>
 

@@ -33,7 +33,6 @@ export default async function DashboardLayout({
     const navLinks = {
         patient: [
             { href: '/patient', label: 'Dashboard' },
-            { href: '/patient/treatment-plan', label: 'Treatment Plan' },
             { href: '/patient/book', label: 'Book Appointment' },
             { href: '/patient/history', label: 'History' },
             { href: '/timeline', label: 'Activity Log' },
@@ -41,6 +40,7 @@ export default async function DashboardLayout({
         ],
         doctor: [
             { href: '/doctor', label: 'Dashboard' },
+            { href: '/doctor/treatment-plans', label: 'Templates' },
             { href: '/doctor/schedule', label: 'My Schedule' },
             { href: '/doctor/patients', label: 'Patients' },
             { href: '/profile', label: 'Profile' },
