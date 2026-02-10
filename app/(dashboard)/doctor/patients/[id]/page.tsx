@@ -64,16 +64,6 @@ export default async function PatientDetailsPage({ params, searchParams }: { par
                 </div>
             </div>
 
-            <ConsultationNotes
-                patientId={id}
-                initialData={activeDraft ? {
-                    id: activeDraft.id,
-                    content: activeDraft.content,
-                    status: activeDraft.status
-                } : null}
-                appointmentId={appointmentId}
-            />
-
             <div className="grid gap-6 lg:grid-cols-3">
                 {/* Left Column: Upload & Profile */}
                 <div className="space-y-6 lg:col-span-1">
@@ -97,11 +87,6 @@ export default async function PatientDetailsPage({ params, searchParams }: { par
 
                 {/* Right Column: Records & History */}
                 <div className="space-y-6 lg:col-span-2">
-                    {/* Treatment Plan */}
-                    <div className="space-y-2">
-                        <PatientTreatmentPlanManager patientId={id} activePlan={activePlan} />
-                    </div>
-
                     {/* Medical Records List */}
                     <div className="space-y-2">
                         <h2 className="text-xl font-semibold tracking-tight">Medical Records</h2>
